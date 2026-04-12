@@ -9,6 +9,6 @@
 | [API-005](NORMATIVE.md#API-005) | ❌ | `ValidationError` variants | Unit test: pattern-match on all `ValidationError` variants (`Clvm`, `CoinNotFound`, `AlreadySpent`, `DoubleSpend`, `PuzzleHashMismatch`, `SignatureFailed`, `ConservationViolation`, `CostExceeded`, `Driver`) |
 | [API-006](NORMATIVE.md#API-006) | ❌ | `thiserror` implementation | Compilation test: verify `ValidationError` implements `std::error::Error` and `Display`; check `#[from]` wraps `ValidationErr` and `DriverError` |
 | [API-007](NORMATIVE.md#API-007) | ❌ | No reimplementation of upstream | Code review: grep for custom CLVM eval loops, custom tree hash, custom BLS verify, custom opcode constants; verify none exist |
-| [API-008](NORMATIVE.md#API-008) | ❌ | Module structure | Filesystem inspection: verify `consensus/` module contains `validate.rs`, `block.rs`, `context.rs`, `config.rs`, `result.rs`, `cache.rs`, `error.rs`; verify `lib.rs` has only re-exports |
+| [API-008](NORMATIVE.md#API-008) | ✅ | Module structure | 9 files match spec exactly: lib.rs + consensus/{mod,validate,block,context,config,result,cache,error}.rs. Compiles clean. |
 
 **Status legend:** ✅ verified · ⚠️ partial · ❌ gap

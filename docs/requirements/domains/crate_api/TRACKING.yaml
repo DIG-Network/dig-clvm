@@ -62,7 +62,9 @@ items:
   - id: API-008
     section: "Module Structure"
     summary: "Module structure"
-    status: gap
+    status: verified
     spec_ref: "docs/requirements/domains/crate_api/specs/API-008.md"
-    tests: []
-    notes: ""
+    tests:
+      - "find src -name '*.rs' | sort (matches spec exactly)"
+      - "cargo check (compiles clean)"
+    notes: "9 files: lib.rs + consensus/{mod,validate,block,context,config,result,cache,error}.rs. lib.rs contains only pub use + pub mod. All types in correct files."
