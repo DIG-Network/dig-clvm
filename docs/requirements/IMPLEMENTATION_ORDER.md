@@ -9,11 +9,11 @@ After completing a requirement: update TRACKING.yaml, VERIFICATION.md, and check
 
 - [x] CON-001 — Separate dig-constants crate
 - [x] CON-002 — NetworkConstants type
-- [ ] CON-003 — DIG_MAINNET and DIG_TESTNET
-- [ ] CON-004 — Fork heights at zero
-- [ ] CON-005 — AGG_SIG additional data derivation
-- [ ] CON-006 — Neutral PoS/VDF fields
-- [ ] CON-007 — Minimal dependencies
+- [x] CON-003 — DIG_MAINNET and DIG_TESTNET
+- [x] CON-004 — Fork heights at zero
+- [ ] CON-005 — AGG_SIG additional data derivation (partial: placeholders until genesis finalized)
+- [x] CON-006 — Neutral PoS/VDF fields
+- [x] CON-007 — Minimal dependencies
 - [ ] API-008 — Module structure (scaffold src/consensus/)
 - [ ] API-002 — No async/IO dependencies
 - [ ] API-003 — Individual chia-sdk-* crates

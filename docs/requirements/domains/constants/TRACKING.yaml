@@ -25,39 +25,43 @@ items:
   - id: CON-003
     section: "Sibling Crate"
     summary: "DIG_MAINNET and DIG_TESTNET"
-    status: gap
+    status: verified
     spec_ref: "docs/requirements/domains/constants/specs/CON-003.md"
-    tests: []
-    notes: ""
+    tests:
+      - "cargo check (both const values compile)"
+    notes: "DIG_MAINNET (genesis 0x00..00) and DIG_TESTNET (genesis 0x00..01) defined as const NetworkConstants. Distinct genesis challenges confirmed."
 
   - id: CON-004
     section: "Consensus Compatibility"
     summary: "Fork heights set to 0"
-    status: gap
+    status: verified
     spec_ref: "docs/requirements/domains/constants/specs/CON-004.md"
-    tests: []
-    notes: ""
+    tests:
+      - "grep hard_fork_height (both set to 0)"
+    notes: "hard_fork_height=0 and hard_fork2_height=0 in both DIG_MAINNET and DIG_TESTNET. All Chia consensus features enabled from block 0."
 
   - id: CON-005
     section: "Consensus Compatibility"
     summary: "AGG_SIG additional data derivation"
-    status: gap
+    status: partial
     spec_ref: "docs/requirements/domains/constants/specs/CON-005.md"
     tests: []
-    notes: ""
+    notes: "agg_sig_me_additional_data = genesis_challenge (correct per spec). Other agg_sig_* fields are placeholder values — MUST be recomputed as sha256(genesis_challenge || opcode_byte) when genesis is finalized. TODO tracked in source."
 
   - id: CON-006
     section: "Consensus Compatibility"
     summary: "Neutral PoS/VDF fields"
-    status: gap
+    status: verified
     spec_ref: "docs/requirements/domains/constants/specs/CON-006.md"
-    tests: []
-    notes: ""
+    tests:
+      - "cargo check (all PoS/VDF fields set to valid neutral values)"
+    notes: "All proof-of-space, VDF, plot filter, weight proof fields set to valid values matching Chia TEST_CONSTANTS pattern. Not used by DIG L2 but required for ConsensusConstants validity."
 
   - id: CON-007
     section: "Dependencies"
     summary: "Minimal dependencies"
-    status: gap
+    status: verified
     spec_ref: "docs/requirements/domains/constants/specs/CON-007.md"
-    tests: []
-    notes: ""
+    tests:
+      - "Cargo.toml inspection"
+    notes: "Dependencies: chia-consensus, chia-protocol, chia-bls, hex-literal only. No dig-clvm, no tokio, no async."
