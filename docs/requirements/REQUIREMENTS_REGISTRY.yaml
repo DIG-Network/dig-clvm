@@ -1,0 +1,66 @@
+schema_version: 1
+
+status_values:
+  active: "Requirements in use for dig-clvm implementation"
+  planned: "Scoped; not yet verified"
+
+domains:
+  - id: validation
+    title: "Spend Validation"
+    summary: "Spend bundle validation pipeline: structural checks, CLVM execution, condition validation, conservation, and error handling."
+    status: active
+    paths:
+      normative: domains/validation/NORMATIVE.md
+      verification: domains/validation/VERIFICATION.md
+      tracking: domains/validation/TRACKING.yaml
+      requirement_specs: domains/validation
+
+  - id: block_generator
+    title: "Block Generator"
+    summary: "Block-level generator construction from spend bundles with cost-aware packing and CLVM back-references, plus block validation."
+    status: active
+    paths:
+      normative: domains/block_generator/NORMATIVE.md
+      verification: domains/block_generator/VERIFICATION.md
+      tracking: domains/block_generator/TRACKING.yaml
+      requirement_specs: domains/block_generator
+
+  - id: bls_cache
+    title: "BLS Cache"
+    summary: "BLS signature verification caching across mempool admission and block validation to avoid redundant re-verification."
+    status: active
+    paths:
+      normative: domains/bls_cache/NORMATIVE.md
+      verification: domains/bls_cache/VERIFICATION.md
+      tracking: domains/bls_cache/TRACKING.yaml
+      requirement_specs: domains/bls_cache
+
+  - id: parity
+    title: "Chia L1 Parity"
+    summary: "1:1 behavioral parity with Chia L1 full nodes achieved by using the same Rust crates."
+    status: active
+    paths:
+      normative: domains/parity/NORMATIVE.md
+      verification: domains/parity/VERIFICATION.md
+      tracking: domains/parity/TRACKING.yaml
+      requirement_specs: domains/parity
+
+  - id: crate_api
+    title: "Crate API"
+    summary: "Public API surface: entry points, types, re-exports, error handling, and dependency management."
+    status: active
+    paths:
+      normative: domains/crate_api/NORMATIVE.md
+      verification: domains/crate_api/VERIFICATION.md
+      tracking: domains/crate_api/TRACKING.yaml
+      requirement_specs: domains/crate_api
+
+  - id: constants
+    title: "Network Constants"
+    summary: "DIG network parameters via the dig-constants sibling crate: genesis challenge, AGG_SIG domains, cost limits."
+    status: active
+    paths:
+      normative: domains/constants/NORMATIVE.md
+      verification: domains/constants/VERIFICATION.md
+      tracking: domains/constants/TRACKING.yaml
+      requirement_specs: domains/constants
