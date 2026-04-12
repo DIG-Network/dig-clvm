@@ -16,10 +16,11 @@ items:
   - id: CON-002
     section: "Sibling Crate"
     summary: "NetworkConstants type"
-    status: gap
+    status: verified
     spec_ref: "docs/requirements/domains/constants/specs/CON-002.md"
-    tests: []
-    notes: ""
+    tests:
+      - "cargo check (compiles with all 6 accessors)"
+    notes: "NetworkConstants wraps ConsensusConstants with consensus(), genesis_challenge(), agg_sig_me_additional_data(), max_block_cost_clvm(), cost_per_byte(), max_coin_amount(). Derives Debug + Clone (not Copy — ConsensusConstants is not Copy)."
 
   - id: CON-003
     section: "Sibling Crate"
