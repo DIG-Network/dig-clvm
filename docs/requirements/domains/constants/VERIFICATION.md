@@ -2,7 +2,7 @@
 
 | ID | Status | Summary | Verification Approach |
 |----|--------|---------|----------------------|
-| [CON-001](NORMATIVE.md#CON-001) | ❌ | Separate `dig-constants` crate | Filesystem inspection: verify `dig-constants/` exists as a separate crate with its own `Cargo.toml` |
+| [CON-001](NORMATIVE.md#CON-001) | ✅ | Separate `dig-constants` crate | Crate at `../dig-constants/`, compiles independently, no dig-clvm dep, no direct clvmr dep |
 | [CON-002](NORMATIVE.md#CON-002) | ❌ | `NetworkConstants` type | Unit test: construct `NetworkConstants`, call `genesis_challenge()`, `agg_sig_me_additional_data()`, `max_block_cost_clvm()`, `cost_per_byte()`, `consensus()` |
 | [CON-003](NORMATIVE.md#CON-003) | ❌ | `DIG_MAINNET` and `DIG_TESTNET` | Unit test: assert `DIG_MAINNET` and `DIG_TESTNET` are `const NetworkConstants` with distinct `genesis_challenge()` values |
 | [CON-004](NORMATIVE.md#CON-004) | ❌ | Fork heights set to 0 | Unit test: assert `DIG_MAINNET.consensus().hard_fork_height == 0` and `hard_fork2_height == 0` for both networks |

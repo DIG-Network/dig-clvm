@@ -7,7 +7,7 @@ After completing a requirement: update TRACKING.yaml, VERIFICATION.md, and check
 
 ## Phase 0: Foundation
 
-- [ ] CON-001 — Separate dig-constants crate
+- [x] CON-001 — Separate dig-constants crate
 - [ ] CON-002 — NetworkConstants type
 - [ ] CON-003 — DIG_MAINNET and DIG_TESTNET
 - [ ] CON-004 — Fork heights at zero
