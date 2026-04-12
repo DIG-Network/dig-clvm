@@ -6,10 +6,12 @@ items:
   - id: CON-001
     section: "Sibling Crate"
     summary: "Separate dig-constants crate"
-    status: gap
+    status: verified
     spec_ref: "docs/requirements/domains/constants/specs/CON-001.md"
-    tests: []
-    notes: ""
+    tests:
+      - "cargo check (independent compilation)"
+      - "cargo tree (no dig-clvm in deps)"
+    notes: "dig-constants crate at ../dig-constants. Compiles independently. No direct clvmr or dig-clvm dependency. chia-consensus brings clvmr transitively for ConsensusConstants."
 
   - id: CON-002
     section: "Sibling Crate"
