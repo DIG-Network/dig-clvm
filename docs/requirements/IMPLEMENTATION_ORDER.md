@@ -14,7 +14,7 @@ After completing a requirement: update TRACKING.yaml, VERIFICATION.md, and check
 - [ ] CON-005 — AGG_SIG additional data derivation (partial: placeholders until genesis finalized)
 - [x] CON-006 — Neutral PoS/VDF fields
 - [x] CON-007 — Minimal dependencies
-- [ ] API-008 — Module structure (scaffold src/consensus/)
+- [x] API-008 — Module structure (scaffold src/consensus/)
 - [ ] API-002 — No async/IO dependencies
 - [ ] API-003 — Individual chia-sdk-* crates
 
