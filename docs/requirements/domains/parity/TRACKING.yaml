@@ -1,0 +1,92 @@
+domain_id: parity
+normative: NORMATIVE.md
+verification: VERIFICATION.md
+
+items:
+  - id: PAR-001
+    section: "Execution Parity"
+    summary: "clvmr with ChiaDialect"
+    status: gap
+    spec_ref: "docs/requirements/domains/parity/specs/PAR-001.md"
+    tests: []
+    notes: ""
+
+  - id: PAR-002
+    section: "Execution Parity"
+    summary: "chia-consensus condition parsing"
+    status: gap
+    spec_ref: "docs/requirements/domains/parity/specs/PAR-002.md"
+    tests: []
+    notes: ""
+
+  - id: PAR-003
+    section: "Execution Parity"
+    summary: "clvm_utils tree hash"
+    status: gap
+    spec_ref: "docs/requirements/domains/parity/specs/PAR-003.md"
+    tests: []
+    notes: ""
+
+  - id: PAR-004
+    section: "Signature Parity"
+    summary: "BLS domain separation matches L1"
+    status: gap
+    spec_ref: "docs/requirements/domains/parity/specs/PAR-004.md"
+    tests: []
+    notes: ""
+
+  - id: PAR-005
+    section: "Signature Parity"
+    summary: "chia-bls aggregate_verify"
+    status: gap
+    spec_ref: "docs/requirements/domains/parity/specs/PAR-005.md"
+    tests: []
+    notes: ""
+
+  - id: PAR-006
+    section: "Cost Parity"
+    summary: "Per-condition costs match L1"
+    status: gap
+    spec_ref: "docs/requirements/domains/parity/specs/PAR-006.md"
+    tests: []
+    notes: ""
+
+  - id: PAR-007
+    section: "Cost Parity"
+    summary: "Per-spend cost limit matches L1"
+    status: gap
+    spec_ref: "docs/requirements/domains/parity/specs/PAR-007.md"
+    tests: []
+    notes: ""
+
+  - id: PAR-008
+    section: "Type Parity"
+    summary: "Protocol types re-exported from chia-protocol"
+    status: gap
+    spec_ref: "docs/requirements/domains/parity/specs/PAR-008.md"
+    tests: []
+    notes: ""
+
+  - id: PAR-009
+    section: "Type Parity"
+    summary: "Condition types from chia-sdk-types"
+    status: gap
+    spec_ref: "docs/requirements/domains/parity/specs/PAR-009.md"
+    tests: []
+    notes: ""
+
+  - id: PAR-010
+    section: "Block Generator Parity"
+    summary: "Block generators match L1"
+    status: gap
+    spec_ref: "docs/requirements/domains/parity/specs/PAR-010.md"
+    tests: []
+    notes: ""
+
+  - id: PAR-011
+    section: "Mempool Flag Parity"
+    summary: "Mempool flags match L1"
+    status: gap
+    spec_ref: "docs/requirements/domains/parity/specs/PAR-011.md"
+    tests: []
+    notes: ""

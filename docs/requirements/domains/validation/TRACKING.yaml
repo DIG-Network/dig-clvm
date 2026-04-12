@@ -1,0 +1,124 @@
+domain_id: validation
+normative: NORMATIVE.md
+verification: VERIFICATION.md
+
+items:
+  - id: VAL-001
+    section: "Entry Point"
+    summary: "validate_spend_bundle() entry point signature"
+    status: gap
+    spec_ref: "docs/requirements/domains/validation/specs/VAL-001.md"
+    tests: []
+    notes: ""
+
+  - id: VAL-002
+    section: "Entry Point"
+    summary: "Delegates to chia_consensus::run_spendbundle"
+    status: gap
+    spec_ref: "docs/requirements/domains/validation/specs/VAL-002.md"
+    tests: []
+    notes: ""
+
+  - id: VAL-003
+    section: "Structural Checks"
+    summary: "Reject duplicate spends"
+    status: gap
+    spec_ref: "docs/requirements/domains/validation/specs/VAL-003.md"
+    tests: []
+    notes: ""
+
+  - id: VAL-004
+    section: "Structural Checks"
+    summary: "Reject missing coins"
+    status: gap
+    spec_ref: "docs/requirements/domains/validation/specs/VAL-004.md"
+    tests: []
+    notes: ""
+
+  - id: VAL-005
+    section: "Structural Checks"
+    summary: "Reject already-spent coins"
+    status: gap
+    spec_ref: "docs/requirements/domains/validation/specs/VAL-005.md"
+    tests: []
+    notes: ""
+
+  - id: VAL-006
+    section: "Structural Checks"
+    summary: "Reject puzzle hash mismatch"
+    status: gap
+    spec_ref: "docs/requirements/domains/validation/specs/VAL-006.md"
+    tests: []
+    notes: ""
+
+  - id: VAL-007
+    section: "Cost Enforcement"
+    summary: "Cost limit enforcement"
+    status: gap
+    spec_ref: "docs/requirements/domains/validation/specs/VAL-007.md"
+    tests: []
+    notes: ""
+
+  - id: VAL-008
+    section: "Cost Enforcement"
+    summary: "Default cost constants"
+    status: gap
+    spec_ref: "docs/requirements/domains/validation/specs/VAL-008.md"
+    tests: []
+    notes: ""
+
+  - id: VAL-009
+    section: "Condition Validation"
+    summary: "Condition validation delegated to chia-consensus"
+    status: gap
+    spec_ref: "docs/requirements/domains/validation/specs/VAL-009.md"
+    tests: []
+    notes: ""
+
+  - id: VAL-010
+    section: "Condition Validation"
+    summary: "Ephemeral coin support"
+    status: gap
+    spec_ref: "docs/requirements/domains/validation/specs/VAL-010.md"
+    tests: []
+    notes: ""
+
+  - id: VAL-011
+    section: "Conservation"
+    summary: "Conservation check"
+    status: gap
+    spec_ref: "docs/requirements/domains/validation/specs/VAL-011.md"
+    tests: []
+    notes: ""
+
+  - id: VAL-012
+    section: "BLS Signature Verification"
+    summary: "BLS signature verification with flags"
+    status: gap
+    spec_ref: "docs/requirements/domains/validation/specs/VAL-012.md"
+    tests: []
+    notes: ""
+
+  - id: VAL-013
+    section: "BLS Signature Verification"
+    summary: "MEMPOOL_MODE stricter rules"
+    status: gap
+    spec_ref: "docs/requirements/domains/validation/specs/VAL-013.md"
+    tests: []
+    notes: ""
+
+  - id: VAL-014
+    section: "Output"
+    summary: "SpendResult output structure"
+    status: gap
+    spec_ref: "docs/requirements/domains/validation/specs/VAL-014.md"
+    tests: []
+    notes: ""
+
+  - id: VAL-015
+    section: "Output"
+    summary: "coin_records contains only relevant coins"
+    status: gap
+    spec_ref: "docs/requirements/domains/validation/specs/VAL-015.md"
+    tests: []
+    notes: ""
