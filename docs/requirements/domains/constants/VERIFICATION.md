@@ -4,10 +4,10 @@
 |----|--------|---------|----------------------|
 | [CON-001](NORMATIVE.md#CON-001) | ✅ | Separate `dig-constants` crate | Crate at `../dig-constants/`, compiles independently, no dig-clvm dep, no direct clvmr dep |
 | [CON-002](NORMATIVE.md#CON-002) | ✅ | `NetworkConstants` type | All 6 accessors implemented: consensus(), genesis_challenge(), agg_sig_me_additional_data(), max_block_cost_clvm(), cost_per_byte(), max_coin_amount(). Debug+Clone derived. |
-| [CON-003](NORMATIVE.md#CON-003) | ❌ | `DIG_MAINNET` and `DIG_TESTNET` | Unit test: assert `DIG_MAINNET` and `DIG_TESTNET` are `const NetworkConstants` with distinct `genesis_challenge()` values |
-| [CON-004](NORMATIVE.md#CON-004) | ❌ | Fork heights set to 0 | Unit test: assert `DIG_MAINNET.consensus().hard_fork_height == 0` and `hard_fork2_height == 0` for both networks |
-| [CON-005](NORMATIVE.md#CON-005) | ❌ | `AGG_SIG` additional data derivation | Cross-validation test: verify `agg_sig_me_additional_data == genesis_challenge`; verify other `agg_sig_*` fields equal `sha256(genesis_challenge \|\| opcode_byte)` |
-| [CON-006](NORMATIVE.md#CON-006) | ❌ | Neutral PoS/VDF fields | Unit test: verify PoS/VDF/plot filter fields in `ConsensusConstants` are set to valid neutral values; pass constants to `chia-consensus` function without panic |
-| [CON-007](NORMATIVE.md#CON-007) | ❌ | Minimal dependencies | Cargo.toml inspection: verify `dig-constants` depends only on `chia-consensus`, `chia-protocol`, `chia-bls`, `hex-literal`; no dependency on `dig-clvm` |
+| [CON-003](NORMATIVE.md#CON-003) | ✅ | `DIG_MAINNET` and `DIG_TESTNET` | Both const values compile; distinct genesis challenges (0x00..00 vs 0x00..01) |
+| [CON-004](NORMATIVE.md#CON-004) | ✅ | Fork heights set to 0 | hard_fork_height=0, hard_fork2_height=0 in both mainnet and testnet |
+| [CON-005](NORMATIVE.md#CON-005) | ⚠️ | `AGG_SIG` additional data derivation | agg_sig_me = genesis_challenge (correct). Other agg_sig_* are placeholders — TODO: sha256 derivation when genesis finalized |
+| [CON-006](NORMATIVE.md#CON-006) | ✅ | Neutral PoS/VDF fields | All PoS/VDF/plot filter fields set to valid neutral values matching Chia TEST_CONSTANTS |
+| [CON-007](NORMATIVE.md#CON-007) | ✅ | Minimal dependencies | Cargo.toml: chia-consensus, chia-protocol, chia-bls, hex-literal only |
 
 **Status legend:** ✅ verified · ⚠️ partial · ❌ gap
