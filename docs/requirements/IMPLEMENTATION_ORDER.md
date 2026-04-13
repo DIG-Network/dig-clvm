@@ -40,11 +40,11 @@ After completing a requirement: update TRACKING.yaml, VERIFICATION.md, and check
 
 - [x] VAL-012 — BLS signature verification
 - [x] VAL-013 — MEMPOOL_MODE stricter rules
-- [ ] BLS-001 — Optional BlsCache parameter
-- [ ] BLS-002 — None cache behavior
-- [ ] BLS-004 — Uses chia-bls::BlsCache directly
-- [ ] BLS-003 — Mempool-to-block cache reuse
-- [ ] BLS-005 — Cache correctness invariant
+- [x] BLS-001 — Optional BlsCache parameter
+- [x] BLS-002 — None cache behavior
+- [x] BLS-004 — Uses chia-bls::BlsCache directly
+- [x] BLS-003 — Mempool-to-block cache reuse
+- [x] BLS-005 — Cache correctness invariant
 
 ## Phase 3: Block Generator
 
