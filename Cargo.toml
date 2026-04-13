@@ -6,6 +6,7 @@ rust-version = "1.75.0"
 description = "DIG L2 CLVM consensus engine — validates spend bundles, computes coin additions and removals"
 license = "MIT"
 authors = ["DIG Network"]
+repository = "https://github.com/DIG-Network/dig-clvm"
 
 [lib]
 path = "src/lib.rs"
