@@ -60,9 +60,9 @@ After completing a requirement: update TRACKING.yaml, VERIFICATION.md, and check
 
 ## Phase 4: Re-exports & API Surface
 
-- [ ] API-001 — Re-exports from upstream crates
-- [ ] API-004 — No storage access
-- [ ] API-007 — No reimplementation
+- [x] API-001 — Re-exports from upstream crates
+- [x] API-004 — No storage access
+- [x] API-007 — No reimplementation
 
 ## Phase 5: Parity Verification
 
