@@ -43,10 +43,12 @@ items:
   - id: CON-005
     section: "Consensus Compatibility"
     summary: "AGG_SIG additional data derivation"
-    status: partial
+    status: verified
     spec_ref: "docs/requirements/domains/constants/specs/CON-005.md"
-    tests: []
-    notes: "agg_sig_me_additional_data = genesis_challenge (correct per spec). Other agg_sig_* fields are placeholder values — MUST be recomputed as sha256(genesis_challenge || opcode_byte) when genesis is finalized. TODO tracked in source."
+    tests:
+      - "python3 sha256 derivation cross-check"
+      - "cargo check (both crates compile)"
+    notes: "agg_sig_me = genesis_challenge. All other agg_sig_* fields derived as sha256(genesis_challenge || opcode_byte) using correct L1 opcode bytes (43-48). Mainnet and testnet have distinct derived values. Values precomputed via Python and hardcoded as hex. NOTE: Must recompute when genesis_challenge is finalized."
 
   - id: CON-006
     section: "Consensus Compatibility"
