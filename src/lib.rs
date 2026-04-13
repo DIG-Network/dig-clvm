@@ -13,6 +13,10 @@ pub use chia_protocol::{self, Bytes, Bytes32, Coin, CoinSpend, CoinState, Progra
 
 // ── Consensus Engine ──
 pub use chia_consensus::{self, consensus_constants::ConsensusConstants, opcodes};
+// Re-export all opcode constants and costs at the top level for convenience.
+// Includes: AGG_SIG_ME, CREATE_COIN, ASSERT_HEIGHT_ABSOLUTE, AGG_SIG_COST,
+// CREATE_COIN_COST, ConditionOpcode, etc.
+pub use chia_consensus::opcodes::*;
 
 // ── BLS Signatures ──
 pub use chia_bls::{self, aggregate_verify, BlsCache, PublicKey, SecretKey, Signature};
