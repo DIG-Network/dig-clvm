@@ -20,21 +20,21 @@ After completing a requirement: update TRACKING.yaml, VERIFICATION.md, and check
 
 ## Phase 1: Core Validation
 
-- [ ] VAL-001 — validate_spend_bundle entry point
-- [ ] VAL-002 — Delegates to chia-consensus run_spendbundle
-- [ ] API-005 — ValidationError variants
-- [ ] API-006 — thiserror implementation
-- [ ] VAL-003 — Reject duplicate spends
-- [ ] VAL-004 — Reject missing coins
-- [ ] VAL-005 — Reject already-spent coins
-- [ ] VAL-006 — Reject puzzle hash mismatch
-- [ ] VAL-007 — Cost limit enforcement
-- [ ] VAL-008 — Default cost constants
-- [ ] VAL-009 — Condition validation delegated
-- [ ] VAL-011 — Conservation check
-- [ ] VAL-014 — SpendResult output structure
-- [ ] VAL-015 — No full UTXO set in memory
-- [ ] VAL-010 — Ephemeral coin support
+- [x] VAL-001 — validate_spend_bundle entry point
+- [x] VAL-002 — Delegates to chia-consensus run_spendbundle
+- [x] API-005 — ValidationError variants
+- [x] API-006 — thiserror implementation
+- [x] VAL-003 — Reject duplicate spends
+- [x] VAL-004 — Reject missing coins
+- [x] VAL-005 — Reject already-spent coins
+- [x] VAL-006 — Reject puzzle hash mismatch
+- [x] VAL-007 — Cost limit enforcement
+- [x] VAL-008 — Default cost constants
+- [x] VAL-009 — Condition validation delegated
+- [x] VAL-011 — Conservation check
+- [x] VAL-014 — SpendResult output structure
+- [x] VAL-015 — No full UTXO set in memory
+- [x] VAL-010 — Ephemeral coin support
 
 ## Phase 2: Signatures & Flags
 
