@@ -11,7 +11,7 @@ use chia_consensus::flags::DONT_VALIDATE_SIGNATURE;
 use chia_consensus::owned_conditions::OwnedSpendBundleConditions;
 use chia_consensus::spendbundle_conditions::run_spendbundle;
 use chia_consensus::spendbundle_validation::validate_clvm_and_signature;
-use chia_protocol::{Coin, SpendBundle};
+use chia_protocol::{Bytes, Coin, SpendBundle};
 use clvmr::LIMIT_HEAP;
 
 use super::config::ValidationConfig;
@@ -87,8 +87,36 @@ pub fn validate_spend_bundle(
             )
             .map_err(|e| ValidationError::Clvm(format!("{:?}", e)))?;
             OwnedSpendBundleConditions::from(&a, sbc)
+        } else if let Some(cache) = _bls_cache {
+            // BLS verification WITH cache — run CLVM first, then use
+            // BlsCache::aggregate_verify() which checks cache before
+            // computing expensive pairings.
+            let mut a = make_allocator(LIMIT_HEAP);
+            let (sbc, pkm_pairs) = run_spendbundle(
+                &mut a,
+                bundle,
+                max_cost,
+                context.height,
+                config.flags,
+                consensus,
+            )
+            .map_err(|e| ValidationError::Clvm(format!("{:?}", e)))?;
+
+            // Use BlsCache for aggregate verification — cached pairings
+            // are reused, new pairings are stored for future calls.
+            let pks_msgs: Vec<(chia_bls::PublicKey, Bytes)> = pkm_pairs;
+            let sig_valid = cache.aggregate_verify(
+                pks_msgs.iter().map(|(pk, msg)| (pk, msg.as_ref())),
+                &bundle.aggregated_signature,
+            );
+            if !sig_valid {
+                return Err(ValidationError::SignatureFailed);
+            }
+
+            OwnedSpendBundleConditions::from(&a, sbc)
         } else {
-            // Full validation including BLS signature verification
+            // Full validation without cache — validate_clvm_and_signature
+            // handles everything including BLS aggregate verify.
             let (owned_conditions, _validation_pairs, _duration) =
                 validate_clvm_and_signature(
                     bundle,
