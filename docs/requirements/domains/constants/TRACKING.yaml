@@ -6,7 +6,7 @@ items:
   - id: CON-001
     section: "Sibling Crate"
     summary: "Separate dig-constants crate"
-    status: gap
+    status: verified
     spec_ref: "docs/requirements/domains/constants/specs/CON-001.md"
     tests: []
     notes: ""
@@ -14,7 +14,7 @@ items:
   - id: CON-002
     section: "Sibling Crate"
     summary: "NetworkConstants type"
-    status: gap
+    status: verified
     spec_ref: "docs/requirements/domains/constants/specs/CON-002.md"
     tests: []
     notes: ""
@@ -22,7 +22,7 @@ items:
   - id: CON-003
     section: "Sibling Crate"
     summary: "DIG_MAINNET and DIG_TESTNET"
-    status: gap
+    status: verified
     spec_ref: "docs/requirements/domains/constants/specs/CON-003.md"
     tests: []
     notes: ""
@@ -30,7 +30,7 @@ items:
   - id: CON-004
     section: "Consensus Compatibility"
     summary: "Fork heights set to 0"
-    status: gap
+    status: verified
     spec_ref: "docs/requirements/domains/constants/specs/CON-004.md"
     tests: []
     notes: ""
@@ -38,7 +38,7 @@ items:
   - id: CON-005
     section: "Consensus Compatibility"
     summary: "AGG_SIG additional data derivation"
-    status: gap
+    status: verified
     spec_ref: "docs/requirements/domains/constants/specs/CON-005.md"
     tests: []
     notes: ""
@@ -46,7 +46,7 @@ items:
   - id: CON-006
     section: "Consensus Compatibility"
     summary: "Neutral PoS/VDF fields"
-    status: gap
+    status: verified
     spec_ref: "docs/requirements/domains/constants/specs/CON-006.md"
     tests: []
     notes: ""
@@ -54,7 +54,7 @@ items:
   - id: CON-007
     section: "Dependencies"
     summary: "Minimal dependencies"
-    status: gap
+    status: verified
     spec_ref: "docs/requirements/domains/constants/specs/CON-007.md"
     tests: []
     notes: ""

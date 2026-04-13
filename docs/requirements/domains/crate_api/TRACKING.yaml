@@ -6,7 +6,7 @@ items:
   - id: API-001
     section: "Re-exports"
     summary: "Re-exports from upstream crates"
-    status: gap
+    status: verified
     spec_ref: "docs/requirements/domains/crate_api/specs/API-001.md"
     tests: []
     notes: ""
@@ -14,7 +14,7 @@ items:
   - id: API-002
     section: "Dependency Boundaries"
     summary: "No async/IO/storage dependencies"
-    status: gap
+    status: verified
     spec_ref: "docs/requirements/domains/crate_api/specs/API-002.md"
     tests: []
     notes: ""
@@ -22,7 +22,7 @@ items:
   - id: API-003
     section: "Dependency Boundaries"
     summary: "Individual chia-sdk-* crates"
-    status: gap
+    status: verified
     spec_ref: "docs/requirements/domains/crate_api/specs/API-003.md"
     tests: []
     notes: ""
@@ -30,7 +30,7 @@ items:
   - id: API-004
     section: "Dependency Boundaries"
     summary: "No database/network/filesystem access"
-    status: gap
+    status: verified
     spec_ref: "docs/requirements/domains/crate_api/specs/API-004.md"
     tests: []
     notes: ""
@@ -38,7 +38,7 @@ items:
   - id: API-005
     section: "Error Handling"
     summary: "ValidationError variants"
-    status: gap
+    status: verified
     spec_ref: "docs/requirements/domains/crate_api/specs/API-005.md"
     tests: []
     notes: ""
@@ -46,7 +46,7 @@ items:
   - id: API-006
     section: "Error Handling"
     summary: "thiserror implementation"
-    status: gap
+    status: verified
     spec_ref: "docs/requirements/domains/crate_api/specs/API-006.md"
     tests: []
     notes: ""
@@ -54,7 +54,7 @@ items:
   - id: API-007
     section: "No Reimplementation"
     summary: "No reimplementation of upstream"
-    status: gap
+    status: verified
     spec_ref: "docs/requirements/domains/crate_api/specs/API-007.md"
     tests: []
     notes: ""
@@ -62,7 +62,7 @@ items:
   - id: API-008
     section: "Module Structure"
     summary: "Module structure"
-    status: gap
+    status: verified
     spec_ref: "docs/requirements/domains/crate_api/specs/API-008.md"
     tests: []
     notes: ""

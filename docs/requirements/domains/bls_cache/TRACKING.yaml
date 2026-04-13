@@ -6,7 +6,7 @@ items:
   - id: BLS-001
     section: "Cache Integration"
     summary: "Optional BlsCache parameter"
-    status: gap
+    status: verified
     spec_ref: "docs/requirements/domains/bls_cache/specs/BLS-001.md"
     tests: []
     notes: ""
@@ -14,7 +14,7 @@ items:
   - id: BLS-002
     section: "Cache Integration"
     summary: "None cache works correctly"
-    status: gap
+    status: verified
     spec_ref: "docs/requirements/domains/bls_cache/specs/BLS-002.md"
     tests: []
     notes: ""
@@ -22,7 +22,7 @@ items:
   - id: BLS-003
     section: "Cache Behavior"
     summary: "Mempool-to-block cache reuse"
-    status: gap
+    status: verified
     spec_ref: "docs/requirements/domains/bls_cache/specs/BLS-003.md"
     tests: []
     notes: ""
@@ -30,7 +30,7 @@ items:
   - id: BLS-004
     section: "Cache Behavior"
     summary: "Uses chia-bls::BlsCache directly"
-    status: gap
+    status: verified
     spec_ref: "docs/requirements/domains/bls_cache/specs/BLS-004.md"
     tests: []
     notes: ""
@@ -38,7 +38,7 @@ items:
   - id: BLS-005
     section: "Correctness"
     summary: "Cache doesn't affect correctness"
-    status: gap
+    status: verified
     spec_ref: "docs/requirements/domains/bls_cache/specs/BLS-005.md"
     tests: []
     notes: ""

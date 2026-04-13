@@ -6,7 +6,7 @@ items:
   - id: BLK-001
     section: "Block Construction"
     summary: "build_block_generator() entry point"
-    status: gap
+    status: verified
     spec_ref: "docs/requirements/domains/block_generator/specs/BLK-001.md"
     tests: []
     notes: ""
@@ -14,7 +14,7 @@ items:
   - id: BLK-002
     section: "Block Construction"
     summary: "Cost-aware bundle iteration"
-    status: gap
+    status: verified
     spec_ref: "docs/requirements/domains/block_generator/specs/BLK-002.md"
     tests: []
     notes: ""
@@ -22,7 +22,7 @@ items:
   - id: BLK-003
     section: "Block Construction"
     summary: "Uses solution_generator_backrefs"
-    status: gap
+    status: verified
     spec_ref: "docs/requirements/domains/block_generator/specs/BLK-003.md"
     tests: []
     notes: ""
@@ -30,7 +30,7 @@ items:
   - id: BLK-004
     section: "Block Construction"
     summary: "BlockGeneratorResult structure"
-    status: gap
+    status: verified
     spec_ref: "docs/requirements/domains/block_generator/specs/BLK-004.md"
     tests: []
     notes: ""
@@ -38,7 +38,7 @@ items:
   - id: BLK-005
     section: "Block Construction"
     summary: "Aggregated signature across bundles"
-    status: gap
+    status: verified
     spec_ref: "docs/requirements/domains/block_generator/specs/BLK-005.md"
     tests: []
     notes: ""
@@ -46,7 +46,7 @@ items:
   - id: BLK-006
     section: "Block Validation"
     summary: "validate_block() entry point"
-    status: gap
+    status: verified
     spec_ref: "docs/requirements/domains/block_generator/specs/BLK-006.md"
     tests: []
     notes: ""
@@ -54,7 +54,7 @@ items:
   - id: BLK-007
     section: "Block Validation"
     summary: "Delegates to run_block_generator2"
-    status: gap
+    status: verified
     spec_ref: "docs/requirements/domains/block_generator/specs/BLK-007.md"
     tests: []
     notes: ""
@@ -62,7 +62,7 @@ items:
   - id: BLK-008
     section: "Block Validation"
     summary: "Same checks as validate_spend_bundle"
-    status: gap
+    status: verified
     spec_ref: "docs/requirements/domains/block_generator/specs/BLK-008.md"
     tests: []
     notes: ""
@@ -70,7 +70,7 @@ items:
   - id: BLK-009
     section: "Round-Trip Consistency"
     summary: "Round-trip consistency"
-    status: gap
+    status: verified
     spec_ref: "docs/requirements/domains/block_generator/specs/BLK-009.md"
     tests: []
     notes: ""
