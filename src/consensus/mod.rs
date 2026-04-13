@@ -12,9 +12,9 @@ pub mod result;
 pub mod validate;
 
 pub use block::{build_block_generator, validate_block};
-pub use result::BlockGeneratorResult;
 pub use config::{ValidationConfig, L1_MAX_COST_PER_SPEND, L2_MAX_COST_PER_BLOCK};
 pub use context::ValidationContext;
 pub use error::ValidationError;
+pub use result::BlockGeneratorResult;
 pub use result::SpendResult;
 pub use validate::validate_spend_bundle;

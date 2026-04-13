@@ -5,7 +5,7 @@ mod common;
 #[test]
 fn par_006_costs_from_chia_consensus() {
     // Compile test: cost constants come from chia-consensus, not reimplemented
-    use chia_consensus::opcodes::{CREATE_COIN_COST, AGG_SIG_COST};
+    use chia_consensus::opcodes::{AGG_SIG_COST, CREATE_COIN_COST};
     let _cc = CREATE_COIN_COST;
     let _as = AGG_SIG_COST;
 }

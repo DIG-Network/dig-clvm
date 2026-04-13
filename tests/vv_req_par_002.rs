@@ -6,7 +6,9 @@ use chia_bls::Signature;
 use chia_protocol::{Bytes32, SpendBundle};
 use dig_clvm::validate_spend_bundle;
 
-use common::{make_simple_spend, make_context, create_coin_condition, wrap_conditions, test_config};
+use common::{
+    create_coin_condition, make_context, make_simple_spend, test_config, wrap_conditions,
+};
 
 #[test]
 fn par_002_conditions_from_chia_consensus() {
@@ -23,7 +25,10 @@ fn par_002_conditions_from_chia_consensus() {
     let config = test_config();
 
     let result = validate_spend_bundle(&bundle, &context, &config, None).unwrap();
-    assert!(!result.conditions.spends.is_empty(), "conditions.spends should be populated");
+    assert!(
+        !result.conditions.spends.is_empty(),
+        "conditions.spends should be populated"
+    );
     // Verify CREATE_COIN was parsed
     assert!(!result.conditions.spends[0].create_coin.is_empty());
 }

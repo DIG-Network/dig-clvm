@@ -66,11 +66,7 @@ pub fn build_block_generator(
 
         // Collect spends for generator construction
         for cs in &bundle.coin_spends {
-            included_spends.push((
-                cs.coin,
-                cs.puzzle_reveal.to_vec(),
-                cs.solution.to_vec(),
-            ));
+            included_spends.push((cs.coin, cs.puzzle_reveal.to_vec(), cs.solution.to_vec()));
             all_removals.push(cs.coin);
         }
 
@@ -176,13 +172,7 @@ pub fn validate_block(
     let removals: Vec<Coin> = conditions
         .spends
         .iter()
-        .map(|spend| {
-            Coin::new(
-                spend.parent_id,
-                spend.puzzle_hash,
-                spend.coin_amount,
-            )
-        })
+        .map(|spend| Coin::new(spend.parent_id, spend.puzzle_hash, spend.coin_amount))
         .collect();
 
     // Conservation check

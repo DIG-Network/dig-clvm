@@ -4,7 +4,7 @@
 //! NetworkConstants from the dig-constants crate. Compilation of this
 //! file alone constitutes a passing test.
 
-use dig_clvm::{DIG_MAINNET, DIG_TESTNET, NetworkConstants};
+use dig_clvm::{NetworkConstants, DIG_MAINNET, DIG_TESTNET};
 
 #[test]
 fn con_001_dig_mainnet_is_accessible() {

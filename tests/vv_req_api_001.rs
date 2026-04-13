@@ -4,11 +4,8 @@
 //! the dig_clvm facade crate. Compilation alone is the primary assertion.
 
 use dig_clvm::{
-    Allocator, Cost, TreeHash,
-    Coin, Program, Bytes32,
-    BlsCache, PublicKey, SecretKey, Signature,
-    SpendContext, ConsensusConstants,
-    DIG_MAINNET,
+    Allocator, BlsCache, Bytes32, Coin, ConsensusConstants, Cost, Program, PublicKey, SecretKey,
+    Signature, SpendContext, TreeHash, DIG_MAINNET,
 };
 
 // Prove these are importable even if unused in runtime tests.

@@ -6,7 +6,9 @@ use chia_bls::Signature;
 use chia_protocol::{Bytes32, SpendBundle};
 use dig_clvm::{validate_spend_bundle, ValidationError};
 
-use common::{make_simple_spend, make_context, create_coin_condition, wrap_conditions, test_config};
+use common::{
+    create_coin_condition, make_context, make_simple_spend, test_config, wrap_conditions,
+};
 
 #[test]
 fn val_003_duplicate_spend_rejected() {
@@ -52,5 +54,9 @@ fn val_003_distinct_spends_pass() {
     let config = test_config();
 
     let result = validate_spend_bundle(&bundle, &context, &config, None);
-    assert!(result.is_ok(), "expected Ok, got {:?}", result.as_ref().err());
+    assert!(
+        result.is_ok(),
+        "expected Ok, got {:?}",
+        result.as_ref().err()
+    );
 }

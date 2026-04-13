@@ -6,7 +6,7 @@ use chia_bls::Signature;
 use chia_protocol::{Bytes32, SpendBundle};
 use dig_clvm::{validate_spend_bundle, ValidationConfig};
 
-use common::{make_simple_spend, make_context, create_coin_condition, wrap_conditions};
+use common::{create_coin_condition, make_context, make_simple_spend, wrap_conditions};
 
 #[test]
 fn par_011_dont_validate_signature_flag() {
@@ -26,7 +26,11 @@ fn par_011_dont_validate_signature_flag() {
     };
 
     let result = validate_spend_bundle(&bundle, &context, &config, None);
-    assert!(result.is_ok(), "DONT_VALIDATE_SIGNATURE should skip BLS, got {:?}", result.as_ref().err());
+    assert!(
+        result.is_ok(),
+        "DONT_VALIDATE_SIGNATURE should skip BLS, got {:?}",
+        result.as_ref().err()
+    );
 }
 
 #[test]

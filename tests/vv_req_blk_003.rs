@@ -6,8 +6,8 @@ use common::{create_coin_condition, make_context, make_simple_spend, wrap_condit
 
 use chia_bls::Signature;
 use chia_protocol::{Bytes32, SpendBundle};
-use dig_clvm::consensus::config::L2_MAX_COST_PER_BLOCK;
 use dig_clvm::build_block_generator;
+use dig_clvm::consensus::config::L2_MAX_COST_PER_BLOCK;
 
 #[test]
 fn blk_003_generator_is_nonempty() {

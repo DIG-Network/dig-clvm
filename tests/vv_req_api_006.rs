@@ -16,8 +16,14 @@ fn api_006_display_produces_nonempty_strings() {
         ValidationError::DoubleSpend(coin_id),
         ValidationError::PuzzleHashMismatch(coin_id),
         ValidationError::SignatureFailed,
-        ValidationError::ConservationViolation { input: 100, output: 200 },
-        ValidationError::CostExceeded { limit: 1000, consumed: 2000 },
+        ValidationError::ConservationViolation {
+            input: 100,
+            output: 200,
+        },
+        ValidationError::CostExceeded {
+            limit: 1000,
+            consumed: 2000,
+        },
     ];
 
     for err in &errors {
@@ -34,7 +40,10 @@ fn api_006_display_produces_nonempty_strings() {
 fn api_006_display_contains_expected_fragments() {
     let err = ValidationError::Clvm("boom".to_string());
     let s = format!("{}", err);
-    assert!(s.contains("boom"), "Display for Clvm should contain the message");
+    assert!(
+        s.contains("boom"),
+        "Display for Clvm should contain the message"
+    );
 
     let err = ValidationError::SignatureFailed;
     let s = format!("{}", err);
@@ -43,12 +52,18 @@ fn api_006_display_contains_expected_fragments() {
         "Display for SignatureFailed should mention 'signature'"
     );
 
-    let err = ValidationError::ConservationViolation { input: 100, output: 200 };
+    let err = ValidationError::ConservationViolation {
+        input: 100,
+        output: 200,
+    };
     let s = format!("{}", err);
     assert!(s.contains("100"), "Display should contain input value");
     assert!(s.contains("200"), "Display should contain output value");
 
-    let err = ValidationError::CostExceeded { limit: 10, consumed: 20 };
+    let err = ValidationError::CostExceeded {
+        limit: 10,
+        consumed: 20,
+    };
     let s = format!("{}", err);
     assert!(s.contains("10"), "Display should contain limit");
     assert!(s.contains("20"), "Display should contain consumed");

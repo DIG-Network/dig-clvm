@@ -3,8 +3,8 @@
 //! Verifies that ValidationConfig::default() works in a plain synchronous
 //! context without requiring async runtime or other special setup.
 
-use dig_clvm::ValidationConfig;
 use dig_clvm::consensus::config::{L1_MAX_COST_PER_SPEND, L2_MAX_COST_PER_BLOCK};
+use dig_clvm::ValidationConfig;
 
 #[test]
 fn api_002_validation_config_default_is_sync() {
@@ -31,5 +31,8 @@ fn api_002_validation_config_fields_are_public() {
 #[test]
 fn api_002_default_flags_are_zero() {
     let config = ValidationConfig::default();
-    assert_eq!(config.flags, 0, "Default flags must be 0 (no special modes)");
+    assert_eq!(
+        config.flags, 0,
+        "Default flags must be 0 (no special modes)"
+    );
 }

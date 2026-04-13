@@ -6,8 +6,8 @@ use common::{create_coin_condition, make_context, make_simple_spend, wrap_condit
 
 use chia_bls::Signature;
 use chia_protocol::{Bytes32, SpendBundle};
-use dig_clvm::consensus::config::L2_MAX_COST_PER_BLOCK;
 use dig_clvm::build_block_generator;
+use dig_clvm::consensus::config::L2_MAX_COST_PER_BLOCK;
 
 #[test]
 fn blk_001_single_bundle_produces_result() {
@@ -21,7 +21,10 @@ fn blk_001_single_bundle_produces_result() {
     let bundle = SpendBundle::new(vec![spend], Signature::default());
     let result = build_block_generator(&[bundle], &ctx, L2_MAX_COST_PER_BLOCK).unwrap();
 
-    assert_eq!(result.bundles_included, 1, "expected exactly 1 bundle included");
+    assert_eq!(
+        result.bundles_included, 1,
+        "expected exactly 1 bundle included"
+    );
 }
 
 #[test]
@@ -29,7 +32,10 @@ fn blk_001_empty_bundles_produces_result() {
     let ctx = make_context(&[]);
     let result = build_block_generator(&[], &ctx, L2_MAX_COST_PER_BLOCK).unwrap();
 
-    assert_eq!(result.bundles_included, 0, "expected 0 bundles included for empty input");
+    assert_eq!(
+        result.bundles_included, 0,
+        "expected 0 bundles included for empty input"
+    );
 }
 
 #[test]
@@ -44,5 +50,9 @@ fn blk_001_result_is_ok() {
     let bundle = SpendBundle::new(vec![spend], Signature::default());
     let result = build_block_generator(&[bundle], &ctx, L2_MAX_COST_PER_BLOCK);
 
-    assert!(result.is_ok(), "build_block_generator should return Ok, got {:?}", result.err());
+    assert!(
+        result.is_ok(),
+        "build_block_generator should return Ok, got {:?}",
+        result.err()
+    );
 }

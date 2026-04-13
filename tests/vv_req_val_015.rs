@@ -9,7 +9,9 @@ use chia_protocol::{Bytes32, SpendBundle};
 use chia_sdk_coinset::CoinRecord;
 use dig_clvm::{validate_spend_bundle, ValidationContext, DIG_TESTNET};
 
-use common::{make_simple_spend, make_context, create_coin_condition, wrap_conditions, test_config};
+use common::{
+    create_coin_condition, make_context, make_simple_spend, test_config, wrap_conditions,
+};
 
 #[test]
 fn val_015_context_accepts_minimal_coins() {
@@ -28,7 +30,11 @@ fn val_015_context_accepts_minimal_coins() {
     let config = test_config();
 
     let result = validate_spend_bundle(&bundle, &context, &config, None);
-    assert!(result.is_ok(), "expected Ok with 1 coin in context, got {:?}", result.as_ref().err());
+    assert!(
+        result.is_ok(),
+        "expected Ok with 1 coin in context, got {:?}",
+        result.as_ref().err()
+    );
 }
 
 #[test]

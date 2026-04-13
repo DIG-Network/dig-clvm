@@ -6,7 +6,7 @@ use chia_bls::Signature;
 use chia_protocol::{Bytes32, SpendBundle};
 use dig_clvm::{validate_spend_bundle, ValidationConfig};
 
-use common::{make_simple_spend, make_context, create_coin_condition, wrap_conditions};
+use common::{create_coin_condition, make_context, make_simple_spend, wrap_conditions};
 
 #[test]
 fn val_012_sig_skipped_with_flag() {
@@ -26,7 +26,11 @@ fn val_012_sig_skipped_with_flag() {
     };
 
     let result = validate_spend_bundle(&bundle, &context, &config, None);
-    assert!(result.is_ok(), "expected Ok with DONT_VALIDATE_SIGNATURE, got {:?}", result.as_ref().err());
+    assert!(
+        result.is_ok(),
+        "expected Ok with DONT_VALIDATE_SIGNATURE, got {:?}",
+        result.as_ref().err()
+    );
 }
 
 #[test]
@@ -48,7 +52,11 @@ fn val_012_without_flag_simple_puzzle_passes() {
     };
 
     let result = validate_spend_bundle(&bundle, &context, &config, None);
-    assert!(result.is_ok(), "expected Ok for simple puzzle with flags=0, got {:?}", result.as_ref().err());
+    assert!(
+        result.is_ok(),
+        "expected Ok for simple puzzle with flags=0, got {:?}",
+        result.as_ref().err()
+    );
 }
 
 #[test]

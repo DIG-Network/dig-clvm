@@ -9,7 +9,8 @@ use dig_clvm::{DIG_MAINNET, DIG_TESTNET};
 #[test]
 fn con_004_mainnet_hard_fork_height_is_zero() {
     assert_eq!(
-        DIG_MAINNET.consensus().hard_fork_height, 0,
+        DIG_MAINNET.consensus().hard_fork_height,
+        0,
         "Mainnet hard_fork_height must be 0"
     );
 }
@@ -17,7 +18,8 @@ fn con_004_mainnet_hard_fork_height_is_zero() {
 #[test]
 fn con_004_mainnet_hard_fork2_height_is_zero() {
     assert_eq!(
-        DIG_MAINNET.consensus().hard_fork2_height, 0,
+        DIG_MAINNET.consensus().hard_fork2_height,
+        0,
         "Mainnet hard_fork2_height must be 0"
     );
 }
@@ -25,11 +27,13 @@ fn con_004_mainnet_hard_fork2_height_is_zero() {
 #[test]
 fn con_004_testnet_hard_fork_heights_are_zero() {
     assert_eq!(
-        DIG_TESTNET.consensus().hard_fork_height, 0,
+        DIG_TESTNET.consensus().hard_fork_height,
+        0,
         "Testnet hard_fork_height must be 0"
     );
     assert_eq!(
-        DIG_TESTNET.consensus().hard_fork2_height, 0,
+        DIG_TESTNET.consensus().hard_fork2_height,
+        0,
         "Testnet hard_fork2_height must be 0"
     );
 }

@@ -1,5 +1,7 @@
 //! Shared test utilities for dig-clvm requirement verification tests.
 
+#![allow(dead_code)]
+
 use std::collections::{HashMap, HashSet};
 
 use chia_protocol::{Bytes32, Coin, CoinSpend, Program};

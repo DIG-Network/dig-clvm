@@ -6,7 +6,9 @@ use chia_bls::{BlsCache, Signature};
 use chia_protocol::{Bytes32, SpendBundle};
 use dig_clvm::validate_spend_bundle;
 
-use common::{make_simple_spend, make_context, create_coin_condition, wrap_conditions, test_config};
+use common::{
+    create_coin_condition, make_context, make_simple_spend, test_config, wrap_conditions,
+};
 
 #[test]
 fn bls_003_cache_reusable_across_calls() {
@@ -25,7 +27,11 @@ fn bls_003_cache_reusable_across_calls() {
     let config = test_config();
 
     let r1 = validate_spend_bundle(&bundle1, &context1, &config, Some(&mut cache));
-    assert!(r1.is_ok(), "first call with cache failed: {:?}", r1.as_ref().err());
+    assert!(
+        r1.is_ok(),
+        "first call with cache failed: {:?}",
+        r1.as_ref().err()
+    );
 
     // Second validation — same cache reused
     let parent2 = Bytes32::from([0xC3; 32]);
@@ -38,7 +44,11 @@ fn bls_003_cache_reusable_across_calls() {
     let context2 = make_context(&[coin2]);
 
     let r2 = validate_spend_bundle(&bundle2, &context2, &config, Some(&mut cache));
-    assert!(r2.is_ok(), "second call with reused cache failed: {:?}", r2.as_ref().err());
+    assert!(
+        r2.is_ok(),
+        "second call with reused cache failed: {:?}",
+        r2.as_ref().err()
+    );
 }
 
 #[test]
@@ -59,6 +69,11 @@ fn bls_003_cache_persists_state() {
         let config = test_config();
 
         let result = validate_spend_bundle(&bundle, &context, &config, Some(&mut cache));
-        assert!(result.is_ok(), "iteration {} failed: {:?}", i, result.as_ref().err());
+        assert!(
+            result.is_ok(),
+            "iteration {} failed: {:?}",
+            i,
+            result.as_ref().err()
+        );
     }
 }

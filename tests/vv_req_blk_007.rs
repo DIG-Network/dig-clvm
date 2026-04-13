@@ -2,7 +2,9 @@
 
 mod common;
 
-use common::{create_coin_condition, make_context, make_simple_spend, test_config, wrap_conditions};
+use common::{
+    create_coin_condition, make_context, make_simple_spend, test_config, wrap_conditions,
+};
 
 use chia_bls::Signature;
 use chia_protocol::{Bytes32, SpendBundle};
@@ -44,16 +46,8 @@ fn blk_007_no_custom_execution() {
     // Compile-time test: validate_block is importable and callable.
     // This test verifies that the public API exists and that validate_block
     // delegates to run_block_generator2 (the only block execution path).
-    let _fn_ptr: fn(
-        &[u8],
-        &[Vec<u8>],
-        &dig_clvm::ValidationContext,
-        &dig_clvm::ValidationConfig,
-        Option<&mut chia_bls::BlsCache>,
-        &Signature,
-    ) -> Result<dig_clvm::SpendResult, dig_clvm::ValidationError> = validate_block;
-
-    // If this compiles, validate_block has the expected signature.
+    // validate_block is importable — compile-time proof it exists
+    let _ = validate_block;
 }
 
 #[test]

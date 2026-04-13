@@ -6,8 +6,8 @@ use common::{create_coin_condition, make_context, make_simple_spend, wrap_condit
 
 use chia_bls::Signature;
 use chia_protocol::{Bytes32, SpendBundle};
-use dig_clvm::consensus::config::L2_MAX_COST_PER_BLOCK;
 use dig_clvm::build_block_generator;
+use dig_clvm::consensus::config::L2_MAX_COST_PER_BLOCK;
 
 #[test]
 fn blk_004_result_has_all_fields() {
@@ -49,7 +49,10 @@ fn blk_004_additions_match_conditions() {
 
     // We created a single CREATE_COIN of 900 mojos to dest_ph
     assert_eq!(result.additions.len(), 1, "expected exactly 1 addition");
-    assert_eq!(result.additions[0].amount, 900, "addition amount should be 900");
+    assert_eq!(
+        result.additions[0].amount, 900,
+        "addition amount should be 900"
+    );
     assert_eq!(
         result.additions[0].puzzle_hash.as_ref(),
         &dest_ph,
