@@ -30,7 +30,7 @@ chia-sdk-coinset = "0.30"
 chia-puzzles = "0.20"
 
 # DIG ecosystem
-dig-constants = { path = "../dig-constants" }
+dig-constants = "0.1.0"
 
 # Minimal own dependencies
 thiserror = "2"
