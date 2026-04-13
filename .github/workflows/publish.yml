@@ -30,13 +30,6 @@ jobs:
       - name: Cache dependencies
         uses: Swatinem/rust-cache@v2
 
-      # For local testing, dig-constants is a path dep. Clone it adjacent.
-      - name: Checkout dig-constants
-        uses: actions/checkout@v4
-        with:
-          repository: DIG-Network/dig-constants
-          path: ../dig-constants
-
       - name: Check formatting
         run: cargo fmt --all -- --check
 
@@ -65,20 +58,6 @@ jobs:
 
       - name: Cache dependencies
         uses: Swatinem/rust-cache@v2
-
-      # Swap path dependency to version for crates.io publish.
-      # dig-constants must be published first (its own repo handles that).
-      - name: Swap dig-constants to version dependency
-        run: |
-          # Extract the version of dig-constants from crates.io
-          DIG_CONSTANTS_VERSION=$(cargo search dig-constants --limit 1 | head -1 | grep -oP '"\K[^"]+')
-          if [ -z "$DIG_CONSTANTS_VERSION" ]; then
-            echo "dig-constants not found on crates.io. Publish it first."
-            exit 1
-          fi
-          echo "Using dig-constants version: $DIG_CONSTANTS_VERSION"
-          sed -i "s|dig-constants = { path = \"../dig-constants\" }|dig-constants = \"$DIG_CONSTANTS_VERSION\"|" Cargo.toml
-          cat Cargo.toml | grep dig-constants
 
       - name: Verify package can be built
         run: cargo build --release
