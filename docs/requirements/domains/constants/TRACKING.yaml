@@ -6,64 +6,55 @@ items:
   - id: CON-001
     section: "Sibling Crate"
     summary: "Separate dig-constants crate"
-    status: verified
+    status: gap
     spec_ref: "docs/requirements/domains/constants/specs/CON-001.md"
-    tests:
-      - "cargo check (independent compilation)"
-      - "cargo tree (no dig-clvm in deps)"
-    notes: "dig-constants crate at ../dig-constants. Compiles independently. No direct clvmr or dig-clvm dependency. chia-consensus brings clvmr transitively for ConsensusConstants."
+    tests: []
+    notes: ""
 
   - id: CON-002
     section: "Sibling Crate"
     summary: "NetworkConstants type"
-    status: verified
+    status: gap
     spec_ref: "docs/requirements/domains/constants/specs/CON-002.md"
-    tests:
-      - "cargo check (compiles with all 6 accessors)"
-    notes: "NetworkConstants wraps ConsensusConstants with consensus(), genesis_challenge(), agg_sig_me_additional_data(), max_block_cost_clvm(), cost_per_byte(), max_coin_amount(). Derives Debug + Clone (not Copy — ConsensusConstants is not Copy)."
+    tests: []
+    notes: ""
 
   - id: CON-003
     section: "Sibling Crate"
     summary: "DIG_MAINNET and DIG_TESTNET"
-    status: verified
+    status: gap
     spec_ref: "docs/requirements/domains/constants/specs/CON-003.md"
-    tests:
-      - "cargo check (both const values compile)"
-    notes: "DIG_MAINNET (genesis 0x00..00) and DIG_TESTNET (genesis 0x00..01) defined as const NetworkConstants. Distinct genesis challenges confirmed."
+    tests: []
+    notes: ""
 
   - id: CON-004
     section: "Consensus Compatibility"
     summary: "Fork heights set to 0"
-    status: verified
+    status: gap
     spec_ref: "docs/requirements/domains/constants/specs/CON-004.md"
-    tests:
-      - "grep hard_fork_height (both set to 0)"
-    notes: "hard_fork_height=0 and hard_fork2_height=0 in both DIG_MAINNET and DIG_TESTNET. All Chia consensus features enabled from block 0."
+    tests: []
+    notes: ""
 
   - id: CON-005
     section: "Consensus Compatibility"
     summary: "AGG_SIG additional data derivation"
-    status: verified
+    status: gap
     spec_ref: "docs/requirements/domains/constants/specs/CON-005.md"
-    tests:
-      - "python3 sha256 derivation cross-check"
-      - "cargo check (both crates compile)"
-    notes: "agg_sig_me = genesis_challenge. All other agg_sig_* fields derived as sha256(genesis_challenge || opcode_byte) using correct L1 opcode bytes (43-48). Mainnet and testnet have distinct derived values. Values precomputed via Python and hardcoded as hex. NOTE: Must recompute when genesis_challenge is finalized."
+    tests: []
+    notes: ""
 
   - id: CON-006
     section: "Consensus Compatibility"
     summary: "Neutral PoS/VDF fields"
-    status: verified
+    status: gap
     spec_ref: "docs/requirements/domains/constants/specs/CON-006.md"
-    tests:
-      - "cargo check (all PoS/VDF fields set to valid neutral values)"
-    notes: "All proof-of-space, VDF, plot filter, weight proof fields set to valid values matching Chia TEST_CONSTANTS pattern. Not used by DIG L2 but required for ConsensusConstants validity."
+    tests: []
+    notes: ""
 
   - id: CON-007
     section: "Dependencies"
     summary: "Minimal dependencies"
-    status: verified
+    status: gap
     spec_ref: "docs/requirements/domains/constants/specs/CON-007.md"
-    tests:
-      - "Cargo.toml inspection"
-    notes: "Dependencies: chia-consensus, chia-protocol, chia-bls, hex-literal only. No dig-clvm, no tokio, no async."
+    tests: []
+    notes: ""

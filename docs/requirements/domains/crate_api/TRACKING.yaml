@@ -14,19 +14,17 @@ items:
   - id: API-002
     section: "Dependency Boundaries"
     summary: "No async/IO/storage dependencies"
-    status: verified
+    status: gap
     spec_ref: "docs/requirements/domains/crate_api/specs/API-002.md"
-    tests:
-      - "Cargo.toml grep (no tokio/serde_json/rocksdb/reqwest)"
-    notes: "No async/IO/storage deps in [dependencies]. chia-sdk-test (dev-dep) brings tokio transitively but only for tests."
+    tests: []
+    notes: ""
 
   - id: API-003
     section: "Dependency Boundaries"
     summary: "Individual chia-sdk-* crates"
-    status: verified
+    status: gap
     spec_ref: "docs/requirements/domains/crate_api/specs/API-003.md"
-    tests:
-      - "Cargo.toml grep (no chia-wallet-sdk)"
+    tests: []
     notes: ""
 
   - id: API-004
@@ -64,9 +62,7 @@ items:
   - id: API-008
     section: "Module Structure"
     summary: "Module structure"
-    status: verified
+    status: gap
     spec_ref: "docs/requirements/domains/crate_api/specs/API-008.md"
-    tests:
-      - "find src -name '*.rs' | sort (matches spec exactly)"
-      - "cargo check (compiles clean)"
-    notes: "9 files: lib.rs + consensus/{mod,validate,block,context,config,result,cache,error}.rs. lib.rs contains only pub use + pub mod. All types in correct files."
+    tests: []
+    notes: ""
