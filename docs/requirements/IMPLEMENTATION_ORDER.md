@@ -66,14 +66,14 @@ After completing a requirement: update TRACKING.yaml, VERIFICATION.md, and check
 
 ## Phase 5: Parity Verification
 
-- [ ] PAR-001 — clvmr with ChiaDialect
-- [ ] PAR-002 — chia-consensus condition parsing
-- [ ] PAR-003 — clvm_utils tree hash
-- [ ] PAR-004 — BLS domain separation
-- [ ] PAR-005 — chia-bls aggregate_verify
-- [ ] PAR-006 — Per-condition costs
-- [ ] PAR-007 — Per-spend cost limit
-- [ ] PAR-008 — Protocol type re-exports
-- [ ] PAR-009 — Condition type re-exports
-- [ ] PAR-010 — Block generator parity
-- [ ] PAR-011 — Mempool flag parity
+- [x] PAR-001 — clvmr with ChiaDialect
+- [x] PAR-002 — chia-consensus condition parsing
+- [x] PAR-003 — clvm_utils tree hash
+- [x] PAR-004 — BLS domain separation
+- [x] PAR-005 — chia-bls aggregate_verify
+- [x] PAR-006 — Per-condition costs
+- [x] PAR-007 — Per-spend cost limit
+- [x] PAR-008 — Protocol type re-exports
+- [x] PAR-009 — Condition type re-exports
+- [x] PAR-010 — Block generator parity
+- [x] PAR-011 — Mempool flag parity
