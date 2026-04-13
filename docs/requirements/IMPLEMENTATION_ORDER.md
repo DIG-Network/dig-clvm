@@ -15,8 +15,8 @@ After completing a requirement: update TRACKING.yaml, VERIFICATION.md, and check
 - [x] CON-006 — Neutral PoS/VDF fields
 - [x] CON-007 — Minimal dependencies
 - [x] API-008 — Module structure (scaffold src/consensus/)
-- [ ] API-002 — No async/IO dependencies
-- [ ] API-003 — Individual chia-sdk-* crates
+- [x] API-002 — No async/IO dependencies
+- [x] API-003 — Individual chia-sdk-* crates
 
 ## Phase 1: Core Validation
 
