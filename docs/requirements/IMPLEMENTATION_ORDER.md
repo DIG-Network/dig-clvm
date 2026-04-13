@@ -48,15 +48,15 @@ After completing a requirement: update TRACKING.yaml, VERIFICATION.md, and check
 
 ## Phase 3: Block Generator
 
-- [ ] BLK-001 — build_block_generator entry point
-- [ ] BLK-002 — Cost-aware bundle iteration
-- [ ] BLK-003 — Uses solution_generator_backrefs
-- [ ] BLK-004 — BlockGeneratorResult structure
-- [ ] BLK-005 — Aggregated signature
-- [ ] BLK-006 — validate_block entry point
-- [ ] BLK-007 — Delegates to run_block_generator2
-- [ ] BLK-008 — Same checks as validate_spend_bundle
-- [ ] BLK-009 — Round-trip consistency
+- [x] BLK-001 — build_block_generator entry point
+- [x] BLK-002 — Cost-aware bundle iteration
+- [x] BLK-003 — Uses solution_generator_backrefs
+- [x] BLK-004 — BlockGeneratorResult structure
+- [x] BLK-005 — Aggregated signature
+- [x] BLK-006 — validate_block entry point
+- [x] BLK-007 — Delegates to run_block_generator2
+- [x] BLK-008 — Same checks as validate_spend_bundle
+- [x] BLK-009 — Round-trip consistency
 
 ## Phase 4: Re-exports & API Surface
 
