@@ -4,7 +4,7 @@
 //! genesis_challenge(), agg_sig_me_additional_data(), max_block_cost_clvm(),
 //! cost_per_byte(), and max_coin_amount(). Validates expected constant values.
 
-use dig_clvm::{DIG_MAINNET, DIG_TESTNET, NetworkConstants};
+use dig_clvm::{NetworkConstants, DIG_MAINNET, DIG_TESTNET};
 
 #[test]
 fn con_002_max_block_cost_clvm_is_11_billion() {

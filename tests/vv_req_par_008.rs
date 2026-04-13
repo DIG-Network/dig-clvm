@@ -2,8 +2,8 @@
 
 mod common;
 
-use dig_clvm::Coin;
 use chia_protocol::Bytes32;
+use dig_clvm::Coin;
 
 #[test]
 fn par_008_coin_from_chia_protocol() {

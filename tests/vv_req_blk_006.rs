@@ -2,7 +2,9 @@
 
 mod common;
 
-use common::{create_coin_condition, make_context, make_simple_spend, test_config, wrap_conditions};
+use common::{
+    create_coin_condition, make_context, make_simple_spend, test_config, wrap_conditions,
+};
 
 use chia_bls::Signature;
 use chia_protocol::{Bytes32, SpendBundle};
@@ -68,7 +70,10 @@ fn blk_006_returns_spend_result() {
         !spend_result.removals.is_empty(),
         "validate_block should produce removals"
     );
-    assert!(spend_result.fee > 0, "fee should be positive (1000 - 900 = 100)");
+    assert!(
+        spend_result.fee > 0,
+        "fee should be positive (1000 - 900 = 100)"
+    );
 }
 
 #[test]

@@ -2,9 +2,9 @@
 
 mod common;
 
-use dig_clvm::tree_hash;
 use clvm_utils::tree_hash_atom;
 use clvmr::Allocator;
+use dig_clvm::tree_hash;
 
 #[test]
 fn par_003_tree_hash_importable() {

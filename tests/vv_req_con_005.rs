@@ -38,27 +38,45 @@ fn con_005_derived_agg_sig_fields_mainnet() {
 
     // AGG_SIG_PARENT  opcode 43
     let expected_parent: [u8; 32] = sha256_genesis_with_opcode(&genesis, 43);
-    assert_eq!(<[u8; 32]>::from(c.agg_sig_parent_additional_data), expected_parent);
+    assert_eq!(
+        <[u8; 32]>::from(c.agg_sig_parent_additional_data),
+        expected_parent
+    );
 
     // AGG_SIG_PUZZLE  opcode 44
     let expected_puzzle: [u8; 32] = sha256_genesis_with_opcode(&genesis, 44);
-    assert_eq!(<[u8; 32]>::from(c.agg_sig_puzzle_additional_data), expected_puzzle);
+    assert_eq!(
+        <[u8; 32]>::from(c.agg_sig_puzzle_additional_data),
+        expected_puzzle
+    );
 
     // AGG_SIG_AMOUNT  opcode 45
     let expected_amount: [u8; 32] = sha256_genesis_with_opcode(&genesis, 45);
-    assert_eq!(<[u8; 32]>::from(c.agg_sig_amount_additional_data), expected_amount);
+    assert_eq!(
+        <[u8; 32]>::from(c.agg_sig_amount_additional_data),
+        expected_amount
+    );
 
     // AGG_SIG_PUZZLE_AMOUNT  opcode 46
     let expected_puzzle_amount: [u8; 32] = sha256_genesis_with_opcode(&genesis, 46);
-    assert_eq!(<[u8; 32]>::from(c.agg_sig_puzzle_amount_additional_data), expected_puzzle_amount);
+    assert_eq!(
+        <[u8; 32]>::from(c.agg_sig_puzzle_amount_additional_data),
+        expected_puzzle_amount
+    );
 
     // AGG_SIG_PARENT_AMOUNT  opcode 47
     let expected_parent_amount: [u8; 32] = sha256_genesis_with_opcode(&genesis, 47);
-    assert_eq!(<[u8; 32]>::from(c.agg_sig_parent_amount_additional_data), expected_parent_amount);
+    assert_eq!(
+        <[u8; 32]>::from(c.agg_sig_parent_amount_additional_data),
+        expected_parent_amount
+    );
 
     // AGG_SIG_PARENT_PUZZLE  opcode 48
     let expected_parent_puzzle: [u8; 32] = sha256_genesis_with_opcode(&genesis, 48);
-    assert_eq!(<[u8; 32]>::from(c.agg_sig_parent_puzzle_additional_data), expected_parent_puzzle);
+    assert_eq!(
+        <[u8; 32]>::from(c.agg_sig_parent_puzzle_additional_data),
+        expected_parent_puzzle
+    );
 }
 
 #[test]
@@ -67,22 +85,40 @@ fn con_005_derived_agg_sig_fields_testnet() {
     let c = DIG_TESTNET.consensus();
 
     let expected_parent: [u8; 32] = sha256_genesis_with_opcode(&genesis, 43);
-    assert_eq!(<[u8; 32]>::from(c.agg_sig_parent_additional_data), expected_parent);
+    assert_eq!(
+        <[u8; 32]>::from(c.agg_sig_parent_additional_data),
+        expected_parent
+    );
 
     let expected_puzzle: [u8; 32] = sha256_genesis_with_opcode(&genesis, 44);
-    assert_eq!(<[u8; 32]>::from(c.agg_sig_puzzle_additional_data), expected_puzzle);
+    assert_eq!(
+        <[u8; 32]>::from(c.agg_sig_puzzle_additional_data),
+        expected_puzzle
+    );
 
     let expected_amount: [u8; 32] = sha256_genesis_with_opcode(&genesis, 45);
-    assert_eq!(<[u8; 32]>::from(c.agg_sig_amount_additional_data), expected_amount);
+    assert_eq!(
+        <[u8; 32]>::from(c.agg_sig_amount_additional_data),
+        expected_amount
+    );
 
     let expected_puzzle_amount: [u8; 32] = sha256_genesis_with_opcode(&genesis, 46);
-    assert_eq!(<[u8; 32]>::from(c.agg_sig_puzzle_amount_additional_data), expected_puzzle_amount);
+    assert_eq!(
+        <[u8; 32]>::from(c.agg_sig_puzzle_amount_additional_data),
+        expected_puzzle_amount
+    );
 
     let expected_parent_amount: [u8; 32] = sha256_genesis_with_opcode(&genesis, 47);
-    assert_eq!(<[u8; 32]>::from(c.agg_sig_parent_amount_additional_data), expected_parent_amount);
+    assert_eq!(
+        <[u8; 32]>::from(c.agg_sig_parent_amount_additional_data),
+        expected_parent_amount
+    );
 
     let expected_parent_puzzle: [u8; 32] = sha256_genesis_with_opcode(&genesis, 48);
-    assert_eq!(<[u8; 32]>::from(c.agg_sig_parent_puzzle_additional_data), expected_parent_puzzle);
+    assert_eq!(
+        <[u8; 32]>::from(c.agg_sig_parent_puzzle_additional_data),
+        expected_parent_puzzle
+    );
 }
 
 #[test]
@@ -91,10 +127,28 @@ fn con_005_mainnet_and_testnet_derived_values_differ() {
     let tc = DIG_TESTNET.consensus();
 
     // Since genesis challenges differ, all derived values must differ.
-    assert_ne!(mc.agg_sig_parent_additional_data, tc.agg_sig_parent_additional_data);
-    assert_ne!(mc.agg_sig_puzzle_additional_data, tc.agg_sig_puzzle_additional_data);
-    assert_ne!(mc.agg_sig_amount_additional_data, tc.agg_sig_amount_additional_data);
-    assert_ne!(mc.agg_sig_puzzle_amount_additional_data, tc.agg_sig_puzzle_amount_additional_data);
-    assert_ne!(mc.agg_sig_parent_amount_additional_data, tc.agg_sig_parent_amount_additional_data);
-    assert_ne!(mc.agg_sig_parent_puzzle_additional_data, tc.agg_sig_parent_puzzle_additional_data);
+    assert_ne!(
+        mc.agg_sig_parent_additional_data,
+        tc.agg_sig_parent_additional_data
+    );
+    assert_ne!(
+        mc.agg_sig_puzzle_additional_data,
+        tc.agg_sig_puzzle_additional_data
+    );
+    assert_ne!(
+        mc.agg_sig_amount_additional_data,
+        tc.agg_sig_amount_additional_data
+    );
+    assert_ne!(
+        mc.agg_sig_puzzle_amount_additional_data,
+        tc.agg_sig_puzzle_amount_additional_data
+    );
+    assert_ne!(
+        mc.agg_sig_parent_amount_additional_data,
+        tc.agg_sig_parent_amount_additional_data
+    );
+    assert_ne!(
+        mc.agg_sig_parent_puzzle_additional_data,
+        tc.agg_sig_parent_puzzle_additional_data
+    );
 }

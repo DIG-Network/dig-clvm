@@ -28,8 +28,14 @@ fn api_004_coin_records_is_empty_on_new_context() {
         coin_records: HashMap::new(),
         ephemeral_coins: HashSet::new(),
     };
-    assert!(ctx.coin_records.is_empty(), "Fresh context must have empty coin_records");
-    assert!(ctx.ephemeral_coins.is_empty(), "Fresh context must have empty ephemeral_coins");
+    assert!(
+        ctx.coin_records.is_empty(),
+        "Fresh context must have empty coin_records"
+    );
+    assert!(
+        ctx.ephemeral_coins.is_empty(),
+        "Fresh context must have empty ephemeral_coins"
+    );
 }
 
 #[test]

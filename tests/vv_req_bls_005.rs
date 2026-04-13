@@ -6,7 +6,9 @@ use chia_bls::{BlsCache, Signature};
 use chia_protocol::{Bytes32, SpendBundle};
 use dig_clvm::validate_spend_bundle;
 
-use common::{make_simple_spend, make_context, create_coin_condition, wrap_conditions, test_config};
+use common::{
+    create_coin_condition, make_context, make_simple_spend, test_config, wrap_conditions,
+};
 
 #[test]
 fn bls_005_cache_does_not_affect_correctness() {
@@ -29,14 +31,19 @@ fn bls_005_cache_does_not_affect_correctness() {
     let bundle2 = SpendBundle::new(vec![spend2], Signature::default());
     let mut cache = BlsCache::default();
 
-    let r_with_cache = validate_spend_bundle(&bundle2, &context, &config, Some(&mut cache)).unwrap();
+    let r_with_cache =
+        validate_spend_bundle(&bundle2, &context, &config, Some(&mut cache)).unwrap();
 
     // Same results
     assert_eq!(r_no_cache.fee, r_with_cache.fee);
     assert_eq!(r_no_cache.additions.len(), r_with_cache.additions.len());
     assert_eq!(r_no_cache.removals.len(), r_with_cache.removals.len());
 
-    for (a, b) in r_no_cache.additions.iter().zip(r_with_cache.additions.iter()) {
+    for (a, b) in r_no_cache
+        .additions
+        .iter()
+        .zip(r_with_cache.additions.iter())
+    {
         assert_eq!(a.amount, b.amount);
         assert_eq!(a.puzzle_hash, b.puzzle_hash);
     }

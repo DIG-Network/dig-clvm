@@ -8,7 +8,7 @@ use chia_bls::Signature;
 use chia_protocol::{Bytes32, SpendBundle};
 use dig_clvm::{validate_spend_bundle, ValidationContext, ValidationError, DIG_TESTNET};
 
-use common::{make_simple_spend, create_coin_condition, wrap_conditions, test_config};
+use common::{create_coin_condition, make_simple_spend, test_config, wrap_conditions};
 
 #[test]
 fn val_010_ephemeral_coin_passes_existence_check() {
@@ -36,11 +36,8 @@ fn val_010_ephemeral_coin_passes_existence_check() {
 
     let result = validate_spend_bundle(&bundle, &context, &config, None);
     // Should NOT be CoinNotFound — the ephemeral check should pass it through
-    match &result {
-        Err(ValidationError::CoinNotFound(_)) => {
-            panic!("ephemeral coin should not produce CoinNotFound");
-        }
-        _ => {} // any other result (Ok or different error) is fine
+    if let Err(ValidationError::CoinNotFound(_)) = &result {
+        panic!("ephemeral coin should not produce CoinNotFound");
     }
 }
 

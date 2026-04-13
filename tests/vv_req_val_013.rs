@@ -13,7 +13,10 @@ fn val_013_mempool_mode_via_flags() {
         ..ValidationConfig::default()
     };
     assert_ne!(config.flags, 0);
-    assert_eq!(config.flags & chia_consensus::flags::MEMPOOL_MODE, chia_consensus::flags::MEMPOOL_MODE);
+    assert_eq!(
+        config.flags & chia_consensus::flags::MEMPOOL_MODE,
+        chia_consensus::flags::MEMPOOL_MODE
+    );
 }
 
 #[test]
@@ -32,5 +35,8 @@ fn val_013_flags_combinable() {
         ..ValidationConfig::default()
     };
     assert_ne!(config.flags & chia_consensus::flags::MEMPOOL_MODE, 0);
-    assert_ne!(config.flags & chia_consensus::flags::DONT_VALIDATE_SIGNATURE, 0);
+    assert_ne!(
+        config.flags & chia_consensus::flags::DONT_VALIDATE_SIGNATURE,
+        0
+    );
 }

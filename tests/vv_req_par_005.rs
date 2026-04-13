@@ -2,8 +2,8 @@
 
 mod common;
 
-use dig_clvm::aggregate_verify;
 use chia_bls::{BlsCache, Signature};
+use dig_clvm::aggregate_verify;
 
 #[test]
 fn par_005_aggregate_verify_importable() {
@@ -12,7 +12,10 @@ fn par_005_aggregate_verify_importable() {
     let sig = Signature::default();
     let data: Vec<(&chia_bls::PublicKey, &[u8])> = vec![];
     let result = aggregate_verify(&sig, data);
-    assert!(result, "aggregate_verify with empty pairs and identity sig should pass");
+    assert!(
+        result,
+        "aggregate_verify with empty pairs and identity sig should pass"
+    );
 }
 
 #[test]

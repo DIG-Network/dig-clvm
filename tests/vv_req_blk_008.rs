@@ -2,7 +2,9 @@
 
 mod common;
 
-use common::{create_coin_condition, make_context, make_simple_spend, test_config, wrap_conditions};
+use common::{
+    create_coin_condition, make_context, make_simple_spend, test_config, wrap_conditions,
+};
 
 use chia_bls::Signature;
 use chia_protocol::{Bytes32, SpendBundle};
@@ -104,6 +106,9 @@ fn blk_008_fee_matches_difference() {
     )
     .unwrap();
 
-    assert_eq!(spend_result.fee, 100, "fee should be 1000 - (600 + 300) = 100");
+    assert_eq!(
+        spend_result.fee, 100,
+        "fee should be 1000 - (600 + 300) = 100"
+    );
     assert_eq!(spend_result.additions.len(), 2, "should have 2 additions");
 }

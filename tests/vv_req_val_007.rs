@@ -6,7 +6,7 @@ use chia_bls::Signature;
 use chia_protocol::{Bytes32, SpendBundle};
 use dig_clvm::{validate_spend_bundle, ValidationConfig};
 
-use common::{make_simple_spend, make_context, create_coin_condition, wrap_conditions};
+use common::{create_coin_condition, make_context, make_simple_spend, wrap_conditions};
 
 #[test]
 fn val_007_cost_within_limit_succeeds() {
@@ -22,7 +22,11 @@ fn val_007_cost_within_limit_succeeds() {
     let config = common::test_config(); // uses L2 limit
 
     let result = validate_spend_bundle(&bundle, &context, &config, None);
-    assert!(result.is_ok(), "expected Ok within L2 cost limit, got {:?}", result.as_ref().err());
+    assert!(
+        result.is_ok(),
+        "expected Ok within L2 cost limit, got {:?}",
+        result.as_ref().err()
+    );
 }
 
 #[test]

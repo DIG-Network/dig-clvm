@@ -6,7 +6,9 @@ use chia_bls::{BlsCache, Signature};
 use chia_protocol::{Bytes32, SpendBundle};
 use dig_clvm::validate_spend_bundle;
 
-use common::{make_simple_spend, make_context, create_coin_condition, wrap_conditions, test_config};
+use common::{
+    create_coin_condition, make_context, make_simple_spend, test_config, wrap_conditions,
+};
 
 #[test]
 fn bls_001_accepts_some_cache() {
@@ -23,7 +25,11 @@ fn bls_001_accepts_some_cache() {
 
     let mut cache = BlsCache::default();
     let result = validate_spend_bundle(&bundle, &context, &config, Some(&mut cache));
-    assert!(result.is_ok(), "expected Ok with Some(cache), got {:?}", result.as_ref().err());
+    assert!(
+        result.is_ok(),
+        "expected Ok with Some(cache), got {:?}",
+        result.as_ref().err()
+    );
 }
 
 #[test]
@@ -40,5 +46,9 @@ fn bls_001_accepts_none() {
     let config = test_config();
 
     let result = validate_spend_bundle(&bundle, &context, &config, None);
-    assert!(result.is_ok(), "expected Ok with None cache, got {:?}", result.as_ref().err());
+    assert!(
+        result.is_ok(),
+        "expected Ok with None cache, got {:?}",
+        result.as_ref().err()
+    );
 }

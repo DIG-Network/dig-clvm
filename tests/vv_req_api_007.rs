@@ -4,7 +4,7 @@
 //! validate_block are importable as functions from the dig_clvm crate.
 //! Compilation is the primary assertion.
 
-use dig_clvm::{validate_spend_bundle, build_block_generator, validate_block};
+use dig_clvm::{build_block_generator, validate_block, validate_spend_bundle};
 
 #[test]
 fn api_007_validate_spend_bundle_exists() {

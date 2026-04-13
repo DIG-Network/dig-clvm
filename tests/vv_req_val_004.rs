@@ -8,7 +8,9 @@ use chia_bls::Signature;
 use chia_protocol::{Bytes32, SpendBundle};
 use dig_clvm::{validate_spend_bundle, ValidationContext, ValidationError, DIG_TESTNET};
 
-use common::{make_simple_spend, make_context, create_coin_condition, wrap_conditions, test_config};
+use common::{
+    create_coin_condition, make_context, make_simple_spend, test_config, wrap_conditions,
+};
 
 #[test]
 fn val_004_missing_coin_rejected() {
@@ -52,5 +54,9 @@ fn val_004_coin_in_records_passes() {
     let config = test_config();
 
     let result = validate_spend_bundle(&bundle, &context, &config, None);
-    assert!(result.is_ok(), "expected Ok, got {:?}", result.as_ref().err());
+    assert!(
+        result.is_ok(),
+        "expected Ok, got {:?}",
+        result.as_ref().err()
+    );
 }

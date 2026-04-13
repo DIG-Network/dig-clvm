@@ -4,7 +4,7 @@
 //! without circular dependency issues. We also verify that
 //! DIG_MAINNET.consensus() returns a usable ConsensusConstants reference.
 
-use dig_clvm::{DIG_MAINNET, DIG_TESTNET, ConsensusConstants};
+use dig_clvm::{ConsensusConstants, DIG_MAINNET, DIG_TESTNET};
 
 #[test]
 fn con_007_compilation_proves_no_circular_dependency() {

@@ -2,8 +2,8 @@
 
 mod common;
 
-use dig_clvm::{ValidationConfig};
 use dig_clvm::consensus::config::{L1_MAX_COST_PER_SPEND, L2_MAX_COST_PER_BLOCK};
+use dig_clvm::ValidationConfig;
 
 #[test]
 fn val_008_default_cost_constants() {

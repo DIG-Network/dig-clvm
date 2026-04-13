@@ -6,7 +6,9 @@ use chia_bls::Signature;
 use chia_protocol::{Bytes32, SpendBundle};
 use dig_clvm::validate_spend_bundle;
 
-use common::{make_simple_spend, make_context, create_coin_condition, wrap_conditions, test_config};
+use common::{
+    create_coin_condition, make_context, make_simple_spend, test_config, wrap_conditions,
+};
 
 #[test]
 fn val_002_valid_spend_produces_conditions() {
@@ -23,7 +25,10 @@ fn val_002_valid_spend_produces_conditions() {
 
     let result = validate_spend_bundle(&bundle, &context, &config, None).unwrap();
     // conditions.spends should be non-empty
-    assert!(!result.conditions.spends.is_empty(), "expected non-empty conditions.spends");
+    assert!(
+        !result.conditions.spends.is_empty(),
+        "expected non-empty conditions.spends"
+    );
 }
 
 #[test]

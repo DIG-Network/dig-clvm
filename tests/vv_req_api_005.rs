@@ -65,8 +65,14 @@ fn api_005_pattern_match_all_variants() {
         ValidationError::DoubleSpend(coin_id),
         ValidationError::PuzzleHashMismatch(coin_id),
         ValidationError::SignatureFailed,
-        ValidationError::ConservationViolation { input: 1, output: 2 },
-        ValidationError::CostExceeded { limit: 10, consumed: 20 },
+        ValidationError::ConservationViolation {
+            input: 1,
+            output: 2,
+        },
+        ValidationError::CostExceeded {
+            limit: 10,
+            consumed: 20,
+        },
     ];
 
     for v in &variants {

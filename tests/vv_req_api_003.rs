@@ -3,7 +3,7 @@
 //! Verifies that SpendContext (from chia-sdk-driver) and CoinRecord
 //! (from chia-sdk-coinset) are usable through the dig_clvm re-exports.
 
-use dig_clvm::{SpendContext, CoinRecord};
+use dig_clvm::{CoinRecord, SpendContext};
 
 #[test]
 fn api_003_spend_context_new() {

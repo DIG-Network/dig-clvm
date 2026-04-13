@@ -9,7 +9,9 @@ use chia_protocol::{Bytes32, Coin, CoinSpend, Program, SpendBundle};
 use chia_sdk_coinset::CoinRecord;
 use dig_clvm::{validate_spend_bundle, ValidationContext, DIG_TESTNET};
 
-use common::{make_simple_spend, make_context, create_coin_condition, wrap_conditions, test_config};
+use common::{
+    create_coin_condition, make_context, make_simple_spend, test_config, wrap_conditions,
+};
 
 #[test]
 fn val_006_puzzle_hash_mismatch_rejected() {
@@ -54,7 +56,10 @@ fn val_006_puzzle_hash_mismatch_rejected() {
 
     let result = validate_spend_bundle(&bundle, &context, &config, None);
     // chia-consensus will reject with a CLVM error about wrong puzzle hash
-    assert!(result.is_err(), "expected error for puzzle hash mismatch, got Ok");
+    assert!(
+        result.is_err(),
+        "expected error for puzzle hash mismatch, got Ok"
+    );
 }
 
 #[test]
@@ -71,5 +76,9 @@ fn val_006_correct_hash_passes() {
     let config = test_config();
 
     let result = validate_spend_bundle(&bundle, &context, &config, None);
-    assert!(result.is_ok(), "expected Ok, got {:?}", result.as_ref().err());
+    assert!(
+        result.is_ok(),
+        "expected Ok, got {:?}",
+        result.as_ref().err()
+    );
 }

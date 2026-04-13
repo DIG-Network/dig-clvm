@@ -2,7 +2,9 @@
 
 mod common;
 
-use common::{create_coin_condition, make_context, make_simple_spend, test_config, wrap_conditions};
+use common::{
+    create_coin_condition, make_context, make_simple_spend, test_config, wrap_conditions,
+};
 
 use chia_bls::Signature;
 use chia_protocol::{Bytes32, SpendBundle};
