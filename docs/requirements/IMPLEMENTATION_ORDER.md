@@ -38,7 +38,7 @@ After completing a requirement: update TRACKING.yaml, VERIFICATION.md, and check
 
 ## Phase 2: Signatures & Flags
 
-- [ ] VAL-012 — BLS signature verification
+- [x] VAL-012 — BLS signature verification
 - [ ] VAL-013 — MEMPOOL_MODE stricter rules
 - [ ] BLS-001 — Optional BlsCache parameter
 - [ ] BLS-002 — None cache behavior
