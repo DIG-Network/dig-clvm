@@ -39,7 +39,7 @@ After completing a requirement: update TRACKING.yaml, VERIFICATION.md, and check
 ## Phase 2: Signatures & Flags
 
 - [x] VAL-012 — BLS signature verification
-- [ ] VAL-013 — MEMPOOL_MODE stricter rules
+- [x] VAL-013 — MEMPOOL_MODE stricter rules
 - [ ] BLS-001 — Optional BlsCache parameter
 - [ ] BLS-002 — None cache behavior
 - [ ] BLS-004 — Uses chia-bls::BlsCache directly
