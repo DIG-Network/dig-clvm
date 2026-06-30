@@ -271,14 +271,29 @@ chia-sdk-test = "0.30"
 
 ## Testing
 
-55 dedicated test files, 154 tests. One file per requirement (`tests/vv_req_{prefix}_{nnn}.rs`).
+57 dedicated test files, 159 tests. One file per requirement (`tests/vv_req_{prefix}_{nnn}.rs`),
+plus targeted branch/error-path coverage for the BLS signature-validation paths.
 
 ```bash
-cargo test              # Run all 154 tests
-cargo test vv_req_val   # Run all validation tests
-cargo test vv_req_blk   # Run all block generator tests
-cargo test vv_req_con   # Run all constants tests
+cargo test -- --test-threads=1   # Run all tests (single-threaded; Simulator tests require it)
+cargo test vv_req_val            # Run all validation tests
+cargo test vv_req_blk            # Run all block generator tests
+cargo test vv_req_con            # Run all constants tests
 ```
+
+### Coverage
+
+Line coverage is measured with [`cargo-llvm-cov`](https://github.com/taiki-e/cargo-llvm-cov)
+and **CI-gated at ≥80% lines** (currently ~91%):
+
+```bash
+cargo llvm-cov --all-features --fail-under-lines 80 -- --test-threads=1
+```
+
+The remaining uncovered lines are defensive guards that re-check cost and
+conservation after `chia-consensus` (`run_spendbundle` / `run_block_generator2`)
+has already enforced the same limits internally and returned an error first —
+they are intentionally not reachable through the normal validation path.
 
 ## Documentation
 
