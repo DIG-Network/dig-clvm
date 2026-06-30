@@ -73,6 +73,27 @@ pub fn create_coin_condition(puzzle_hash: &[u8; 32], amount: u64) -> Vec<u8> {
     buf
 }
 
+/// Build a CLVM AGG_SIG condition: `(opcode pubkey message)`.
+///
+/// `opcode` is the signature opcode — 49 (AGG_SIG_UNSAFE) or 50 (AGG_SIG_ME).
+/// `pubkey` is the 48-byte BLS G1 public key. The resulting spend REQUIRES a
+/// valid aggregate signature over `message`, so validating it with a default
+/// (identity) signature drives the SignatureFailed path.
+pub fn agg_sig_condition(opcode: u8, pubkey: &[u8; 48], message: &[u8]) -> Vec<u8> {
+    let mut buf = vec![0xff, opcode];
+    // arg 1: 48-byte pubkey atom (0x80 | 48 == 0xb0)
+    buf.push(0xff);
+    buf.push(0xb0);
+    buf.extend_from_slice(pubkey);
+    // arg 2: message atom
+    buf.push(0xff);
+    buf.push(message.len() as u8 | 0x80);
+    buf.extend_from_slice(message);
+    // terminate the condition's argument list
+    buf.push(0x80);
+    buf
+}
+
 /// Wrap condition bytes into a CLVM list: `(cond1 cond2 ...)`
 pub fn wrap_conditions(conditions: &[Vec<u8>]) -> Vec<u8> {
     let mut buf = Vec::new();
