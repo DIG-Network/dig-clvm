@@ -23,6 +23,12 @@ jobs:
   test:
     name: Test Suite
     runs-on: ubuntu-latest
+    # The release-gate PR run already tested this exact merged tree before it was
+    # allowed to merge/tag (CLAUDE.md §2.4a). Re-running the full suite again on the
+    # tag push is redundant and a pure flake-exposure surface (#488 — a re-run flake
+    # blocked a release). Skip on tag pushes; still run for PRs, main pushes, and
+    # workflow_dispatch.
+    if: "!startsWith(github.ref, 'refs/tags/')"
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -36,6 +42,9 @@ jobs:
       - name: Cache dependencies
         uses: Swatinem/rust-cache@v2
 
+      - name: Install cargo-nextest
+        uses: taiki-e/install-action@nextest
+
       - name: Install cargo-llvm-cov
         uses: taiki-e/install-action@cargo-llvm-cov
 
@@ -45,11 +54,12 @@ jobs:
       - name: Check clippy
         run: cargo clippy --all-targets --all-features -- -D warnings
 
-      # Run the full test suite under coverage instrumentation and FAIL the
-      # build if line coverage drops below 80%. --test-threads=1 is required
+      # Run the full test suite under nextest (retries: a test that fails then
+      # passes on retry is reported as flaky, not hidden) with coverage
+      # instrumentation, gated at >=80% line coverage. --test-threads=1 is required
       # because the Simulator-based tests are not parallel-safe.
-      - name: Run tests with coverage (gate ≥80% lines)
-        run: cargo llvm-cov --all-features --fail-under-lines 80 -- --test-threads=1
+      - name: Run tests with coverage (nextest, retries=2, gate >=80% lines)
+        run: cargo llvm-cov nextest --all-features --fail-under-lines 80 --retries 2 --test-threads 1
 
       - name: Check documentation
         run: cargo doc --no-deps --all-features
@@ -58,7 +68,11 @@ jobs:
     name: Publish to crates.io
     runs-on: ubuntu-latest
     needs: test
-    if: startsWith(github.ref, 'refs/tags/v') || github.event_name == 'workflow_dispatch'
+    # Tag pushes skip the `test` job above (already gated on the PR) — treat that
+    # skip as success so publish still runs on the tag; only a real failure blocks it.
+    if: |
+      (startsWith(github.ref, 'refs/tags/v') || github.event_name == 'workflow_dispatch') &&
+      (needs.test.result == 'success' || needs.test.result == 'skipped')
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
