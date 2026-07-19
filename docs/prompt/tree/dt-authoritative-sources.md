@@ -4,7 +4,7 @@
 
 | Source | Location | Purpose |
 |--------|----------|---------|
-| SPEC | `docs/resources/SPEC.md` | Master specification — all requirements derive from this |
+| SPEC | `SPEC.md` | Master specification — all requirements derive from this |
 | NORMATIVE | `domains/{domain}/NORMATIVE.md` | Authoritative requirement statements (MUST/SHOULD/MAY) |
 | Dedicated Spec | `domains/{domain}/specs/PREFIX-NNN.md` | Detailed specification per requirement |
 | VERIFICATION | `domains/{domain}/VERIFICATION.md` | QA approach and status |

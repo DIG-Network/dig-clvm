@@ -299,6 +299,6 @@ they are intentionally not reachable through the normal validation path.
 
 | Document | Path |
 |---|---|
-| Specification | `docs/resources/SPEC.md` |
+| Specification | `SPEC.md` |
 | Requirements (55) | `docs/requirements/` |
 | Workflow | `docs/prompt/start.md` |

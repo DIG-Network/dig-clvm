@@ -112,7 +112,7 @@ To check whether embeddings exist, inspect `.gitnexus/meta.json` — the `stats.
 
 | Document | Path | Purpose |
 |----------|------|---------|
-| Master Spec | `docs/resources/SPEC.md` | Complete specification |
+| Master Spec | `SPEC.md` | Complete specification |
 | Prompt System | `docs/prompt/start.md` | Workflow entry point |
 | Requirements | `docs/requirements/README.md` | 55 requirements across 6 domains |
 | Implementation Order | `docs/requirements/IMPLEMENTATION_ORDER.md` | Phased checklist |
