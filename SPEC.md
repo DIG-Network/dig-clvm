@@ -976,5 +976,3 @@ The only L2-specific parameter that differs from Chia L1 is the block-level cost
 3. **SpendVisitor customization: Yes.** `dig-clvm` exposes the `SpendVisitor` hook from `chia-consensus`, enabling different validation strictness for mempool admission vs block validation. The `ValidationConfig::flags` field accepts `MEMPOOL_MODE` ([`mempool.py:13`](https://github.com/Chia-Network/chia-blockchain/blob/main/chia/full_node/mempool.py#L13)) for stricter mempool rules (reject unknown opcodes, stricter cost accounting). This allows L2-specific mempool policies (e.g., minimum fee thresholds, puzzle blacklists) to be enforced at the CLVM validation layer rather than requiring external filtering.
 
 4. **Individual crates.** `dig-clvm` depends on `chia-sdk-types`, `chia-sdk-driver`, `chia-sdk-coinset`, etc. individually rather than the `chia-wallet-sdk` umbrella. This avoids pulling in RPC client code, wallet utilities, and other modules that a consensus crate doesn't need. Each sub-crate is pinned to the same version for consistency.
-
-<!-- WIP: relocating SPEC.md to repo root per CLAUDE.md §4.2 -->

@@ -4,9 +4,8 @@
 
 ```
 dig-clvm/
+├── SPEC.md                                  # Master specification (repo root)
 ├── docs/
-│   ├── resources/
-│   │   └── SPEC.md                          # Master specification
 │   ├── requirements/
 │   │   ├── SCHEMA.md                        # Data model and conventions
 │   │   ├── README.md                        # Requirements system overview
@@ -52,7 +51,7 @@ dig-clvm/
 
 | Artifact | Path |
 |----------|------|
-| Master spec | `docs/resources/SPEC.md` |
+| Master spec | `SPEC.md` |
 | Implementation order | `docs/requirements/IMPLEMENTATION_ORDER.md` |
 | Domain requirements | `docs/requirements/domains/{domain}/NORMATIVE.md` |
 | Requirement spec | `docs/requirements/domains/{domain}/specs/PREFIX-NNN.md` |
