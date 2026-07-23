@@ -1,978 +1,511 @@
-# dig-clvm: Modular CLVM Consensus Crate
+# dig-clvm — Normative Specification
 
-## 1. Purpose
+This document is the authoritative contract for the `dig-clvm` crate: the DIG L2 CLVM
+consensus engine. It specifies the public API surface, the exact validation semantics,
+invariants, error behavior, configuration defaults, and the conformance obligations that
+bind this crate to the rest of the DIG ecosystem and to Chia L1 consensus.
 
-`dig-clvm` is a standalone Rust crate used by DIG validators to **validate spend bundles and compute the resulting coin additions and removals**. It is the module that runs CLVM programs when coins are spent, producing the set of state changes (new coins created, old coins destroyed) that the caller then commits to blockchain state.
+The key words **MUST**, **MUST NOT**, **SHALL**, **SHOULD**, **SHOULD NOT**, and **MAY**
+are to be interpreted as described in RFC 2119.
 
-It is built as a **thin orchestration layer on top of the Chia crate ecosystem**, not a reimplementation. The Chia crates already provide the CLVM runtime, condition types, tree hashing, currying, BLS signatures, puzzle drivers, and an in-memory simulator. `dig-clvm` composes these into a consensus-grade API with L2-specific validation rules and configurable cost limits.
+Non-normative design rationale and the upstream Chia crate inventory live in
+`docs/resources/SPEC.md`; where the two disagree, this document is authoritative.
 
-### Core Contract
+---
+
+## 1. Scope
+
+### 1.1 What this crate is
+
+`dig-clvm` validates Chia-format spend bundles and block generators under DIG L2
+consensus rules and computes the resulting coin state changes (additions, removals, fee).
+It is a **thin orchestration layer** over the Chia consensus crate ecosystem
+(`chia-consensus`, `clvmr`, `chia-bls`, `chia-protocol`, `chia-sdk-*`).
+
+The core contract:
 
 ```
 Input:  SpendBundle (coin spends + aggregated BLS signature)
-Output: SpendResult { additions: Vec<Coin>, removals: Vec<Coin>, fee: u64 }
+        — or a serialized block generator + refs —
+Output: SpendResult { additions: Vec<Coin>, removals: Vec<Coin>, fee: u64, conditions }
         or ValidationError
 ```
 
-Blockchain state management (UTXO set persistence, Merkle roots, block assembly) is **out of scope**. This crate validates and computes; the caller commits to state.
+### 1.2 What this crate is not
 
-This mirrors how Chia L1 separates execution from state: [`tx_removals_and_additions()`](https://github.com/Chia-Network/chia-blockchain/blob/main/chia/consensus/generator_tools.py#L54) extracts additions and removals from `SpendBundleConditions`, then the caller ([`validate_block_body()`](https://github.com/Chia-Network/chia-blockchain/blob/main/chia/consensus/block_body_validation.py#L191)) commits them to the coin store.
+The crate MUST NOT:
 
-### Goals
+- persist state, perform I/O, or open network connections — all chain state is passed
+  in via `ValidationContext` and results are returned to the caller, who commits them;
+- expose `async` APIs — every public function is a pure, synchronous computation;
+- reimplement CLVM execution, condition parsing, cost accounting, tree hashing, or BLS
+  verification — these MUST be delegated to the upstream Chia crates
+  (`run_spendbundle`, `run_block_generator2`, `validate_clvm_and_signature`,
+  `BlsCache::aggregate_verify`);
+- compile Chialisp source (callers use external tooling for that);
+- manage the UTXO set, Merkle state roots, or block storage (see `dig-coinstore` /
+  `dig-blockstore` in the DIG ecosystem).
 
-1. **Maximize reuse** - Use `chia-consensus`, `chia-sdk-types`, `chia-sdk-driver`, `clvmr`, `clvm-utils`, `clvm-traits`, `chia-bls`, and `chia-sdk-test` directly. Never reimplement what they provide.
-2. **1:1 Chia L1 parity** - Identical behavior to Chia full nodes because we use the same libraries they use. Parity is achieved by construction, not by reimplementation.
-3. **Self-contained testing** - The crate ships with its own test suite using `chia-sdk-test::Simulator` for full spend-bundle-level tests, plus targeted unit tests for L2-specific logic.
-4. **Consensus-grade API** - A well-defined public surface for DIG validators, mempools, and block builders. No UI, networking, or storage concerns leak in.
+### 1.3 Position in the DIG ecosystem
 
-### Non-Goals
-
-- Compiling Chialisp source to CLVM bytecode (use `clvm_tools_rs` externally).
-- Blockchain state management (UTXO set persistence, Merkle roots, block storage, state commitment).
-- Reimplementing anything the Chia crates already provide.
-
----
-
-## 2. Chia Crate Ecosystem Inventory
-
-This section documents what each upstream crate provides and how `dig-clvm` uses it. This is the foundation: everything listed here is **used directly, not reimplemented**.
-
-### 2.1 `clvmr` (v0.14) - CLVM Runtime
-
-The bytecode interpreter. Everything starts here. Chia L1 delegates all CLVM execution to this Rust crate via `chia_rs` — see the import at [`multiprocess_validation.py:20-21`](https://github.com/Chia-Network/chia-blockchain/blob/main/chia/consensus/multiprocess_validation.py#L20) where `run_block_generator` and `run_block_generator2` are pulled from `chia_rs`.
-
-| API | Purpose |
-|---|---|
-| `run_program(allocator, dialect, program, env, max_cost)` | Execute CLVM bytecode with cost tracking |
-| `Allocator` | Memory manager for CLVM S-expressions |
-| `NodePtr`, `SExp` | Typed pointers and atom/pair discrimination |
-| `ChiaDialect::new(flags)` | Chia-specific CLVM dialect with soft-fork flags |
-| `Cost` | `u64` type alias for cost tracking |
-| `serde::{node_from_bytes, node_to_bytes}` | Binary serialization of CLVM trees |
-| `MEMPOOL_MODE`, `NO_UNKNOWN_OPS`, `LIMIT_HEAP` | Execution flag constants — Chia L1 imports these at [`mempool.py:13-14`](https://github.com/Chia-Network/chia-blockchain/blob/main/chia/full_node/mempool.py#L13) |
-
-**dig-clvm usage**: Direct dependency. The `run_program` function is the core execution primitive.
-
-### 2.2 `clvm-traits` (v0.26) - Serialization Traits
-
-| API | Purpose |
-|---|---|
-| `ToClvm<E>` / `FromClvm<D>` | Encode/decode Rust types to/from CLVM |
-| `#[derive(ToClvm, FromClvm)]` | Derive macros with `#[clvm(list)]`, `#[clvm(curry)]` attributes |
-
-**dig-clvm usage**: Re-exported. Callers use these to define custom puzzle arguments.
-
-### 2.3 `clvm-utils` (v0.26) - Tree Hash & Currying
-
-Chia L1 tests tree hash correctness in [`test_curry_and_treehash.py`](https://github.com/Chia-Network/chia-blockchain/blob/main/chia/_tests/clvm/test_curry_and_treehash.py).
-
-| API | Purpose |
-|---|---|
-| `tree_hash(allocator, node)` | Canonical CLVM tree hash (atom: `sha256(0x01 \|\| data)`, pair: `sha256(0x02 \|\| left \|\| right)`) |
-| `tree_hash_atom(bytes)` / `tree_hash_pair(left, right)` | Standalone hash primitives |
-| `TreeHash` | 32-byte hash newtype with conversions |
-| `CurriedProgram<P, A>` | `(a (q . program) args)` representation with CLVM serialization |
-| `curry_tree_hash(program_hash, arg_hashes)` | Compute curried puzzle hash without an allocator |
-| `ToTreeHash` | Trait for types that can compute their own tree hash |
-
-**dig-clvm usage**: Re-exported. Used for puzzle hash computation and currying throughout.
-
-### 2.4 `chia-protocol` (v0.26) - Core Protocol Types
-
-These are the canonical wire types used by Chia full nodes. `SpendBundle` is imported from `chia_rs` at [`mempool_manager.py:6`](https://github.com/Chia-Network/chia-blockchain/blob/main/chia/types/mempool_item.py#L6), and `CoinSpend` at [`coin_spend.py:6`](https://github.com/Chia-Network/chia-blockchain/blob/main/chia/types/coin_spend.py#L6).
-
-| API | Purpose |
-|---|---|
-| `Coin` | `(parent_coin_info, puzzle_hash, amount)` with `coin_id()` method |
-| `CoinSpend` | `(coin, puzzle_reveal, solution)` |
-| `SpendBundle` | `(coin_spends, aggregated_signature)` with `aggregate()`, `additions()`, `name()` |
-| `Program` | Serialized CLVM bytecode wrapper |
-| `CoinState` | Coin with creation/spend height tracking |
-| `Bytes`, `Bytes32` | Byte array types |
-
-**dig-clvm usage**: Re-exported. These are the canonical wire types.
-
-### 2.5 `chia-consensus` (v0.26) - Consensus Validation Engine
-
-This is the critical crate. It provides the **actual consensus logic** used by Chia full nodes. On L1, the mempool calls [`validate_clvm_and_signature()`](https://github.com/Chia-Network/chia-blockchain/blob/main/chia/full_node/mempool_manager.py#L445) at `mempool_manager.py:445`, and block validation calls [`_run_block()`](https://github.com/Chia-Network/chia-blockchain/blob/main/chia/consensus/multiprocess_validation.py#L62) at `multiprocess_validation.py:62` which selects between `run_block_generator` (pre-hard-fork) and `run_block_generator2` (post-hard-fork) at [lines 69-71](https://github.com/Chia-Network/chia-blockchain/blob/main/chia/consensus/multiprocess_validation.py#L69).
-
-| API | Purpose |
-|---|---|
-| `run_spendbundle(allocator, bundle, max_cost, height, constants, flags)` | Execute all spends in a bundle, extract and validate conditions |
-| `validate_clvm_and_signature(allocator, bundle, max_cost, constants, height)` | Full validation: CLVM execution + BLS signature verification |
-| `get_conditions_from_spendbundle(allocator, bundle, max_cost, constants, height, flags)` | Conditions without signature validation |
-| `SpendBundleConditions` / `OwnedSpendBundleConditions` | Aggregated conditions across all spends — imported at [`multiprocess_validation.py:17`](https://github.com/Chia-Network/chia-blockchain/blob/main/chia/consensus/multiprocess_validation.py#L17) |
-| `SpendConditions` / `OwnedSpendConditions` | Per-spend conditions (coin_id, puzzle_hash, create_coin, agg_sig_*, etc.) |
-| `SpendVisitor` trait | Hook into condition processing (e.g., `MempoolVisitor`) |
-| `ConsensusConstants` | All blockchain parameters (costs, fork heights, additional_data) — instantiated at [`default_constants.py:13`](https://github.com/Chia-Network/chia-blockchain/blob/main/chia/consensus/default_constants.py#L13) |
-| `get_flags_for_height_and_constants(height, constants)` | Compute execution flags for a given block height — imported at [`multiprocess_validation.py:19`](https://github.com/Chia-Network/chia-blockchain/blob/main/chia/consensus/multiprocess_validation.py#L19) |
-| `make_allocator(flags)` | Factory for properly-configured allocators |
-| Opcode constants | `AGG_SIG_ME`, `CREATE_COIN`, etc. — defined at [`condition_opcodes.py:7-73`](https://github.com/Chia-Network/chia-blockchain/blob/main/chia/types/condition_opcodes.py#L7) |
-| Cost constants | `AGG_SIG_COST=1_200_000` ([`condition_costs.py:8`](https://github.com/Chia-Network/chia-blockchain/blob/main/chia/consensus/condition_costs.py#L8)), `CREATE_COIN_COST=1_800_000` ([`:9`](https://github.com/Chia-Network/chia-blockchain/blob/main/chia/consensus/condition_costs.py#L9)), `GENERIC_CONDITION_COST=500` ([`:13`](https://github.com/Chia-Network/chia-blockchain/blob/main/chia/consensus/condition_costs.py#L13)) |
-
-**dig-clvm usage**: The validation backbone. `run_spendbundle()` replaces the hand-rolled `run_puzzle()` + `parse_conditions()` loop. `OwnedSpendBundleConditions` replaces the custom `ClvmResult` + `Condition` enum for consensus paths.
-
-### 2.6 `chia-bls` (v0.26) - BLS12-381 Signatures
-
-Chia L1 constructs signature messages via [`make_aggsig_final_message()`](https://github.com/Chia-Network/chia-blockchain/blob/main/chia/consensus/condition_tools.py#L74) at `condition_tools.py:74`, and collects (pubkey, message) pairs via [`pkm_pairs()`](https://github.com/Chia-Network/chia-blockchain/blob/main/chia/consensus/condition_tools.py#L100) at `:100`. The domain separation lookup table is at [`:87-97`](https://github.com/Chia-Network/chia-blockchain/blob/main/chia/consensus/condition_tools.py#L87):
-
-```python
-COIN_TO_ADDENDUM_F_LOOKUP = {
-    AGG_SIG_PARENT:         lambda coin: coin.parent_coin_info,
-    AGG_SIG_PUZZLE:         lambda coin: coin.puzzle_hash,
-    AGG_SIG_AMOUNT:         lambda coin: int_to_bytes(coin.amount),
-    AGG_SIG_PUZZLE_AMOUNT:  lambda coin: coin.puzzle_hash + int_to_bytes(coin.amount),
-    AGG_SIG_PARENT_AMOUNT:  lambda coin: coin.parent_coin_info + int_to_bytes(coin.amount),
-    AGG_SIG_PARENT_PUZZLE:  lambda coin: coin.parent_coin_info + coin.puzzle_hash,
-    AGG_SIG_ME:             lambda coin: coin.name(),
-}
-final_message = msg + addendum + additional_data[opcode]
-```
-
-| API | Purpose |
-|---|---|
-| `PublicKey`, `SecretKey`, `Signature` | Key and signature types |
-| `sign(sk, msg)` | Sign a message |
-| `verify(pk, msg, sig)` | Verify a single signature |
-| `aggregate_verify(pks, msgs, sig)` | Verify aggregated BLS signature |
-| `aggregate(signatures)` | Aggregate multiple signatures |
-| `BlsCache` | Cache for verified signature pairings |
-
-**dig-clvm usage**: Re-exported. Used by the validation layer for signature verification.
-
-### 2.7 `chia-sdk-types` (v0.30) - SDK Type Definitions
-
-| API | Purpose |
-|---|---|
-| `Condition<T>` enum | All condition opcodes with typed fields, generic over node representation. Covers all opcodes from [`condition_opcodes.py`](https://github.com/Chia-Network/chia-blockchain/blob/main/chia/types/condition_opcodes.py#L7) including [`SEND_MESSAGE(66)` / `RECEIVE_MESSAGE(67)`](https://github.com/Chia-Network/chia-blockchain/blob/main/chia/types/condition_opcodes.py#L37) (Chia 2.3+) |
-| `Conditions<T>` | Builder for condition lists with `.with()` chaining |
-| `run_puzzle(allocator, puzzle, solution)` | Convenience wrapper: `ChiaDialect(0)` + 11B cost limit (mirrors L1's [`MAX_BLOCK_COST_CLVM=11_000_000_000`](https://github.com/Chia-Network/chia-blockchain/blob/main/chia/consensus/default_constants.py#L68)) |
-| `announcement_id(source, message)` | Compute announcement hash |
-| `Mod` trait | `mod_reveal()`, `mod_hash()`, `curry_tree_hash()` for puzzle modules |
-| `MAINNET_CONSTANTS`, `TESTNET11_CONSTANTS` | Network-specific constants |
-| `MerkleTree`, `MerkleProof` | Merkle proof construction and verification |
-
-**dig-clvm usage**: `Condition<T>` and `Conditions<T>` are the primary condition types for spend construction and inspection. `run_puzzle()` is the high-level execution function. `Mod` is the trait for defining puzzle modules.
-
-### 2.8 `chia-sdk-driver` (v0.30) - Puzzle Drivers & Spend Building
-
-| API | Purpose |
-|---|---|
-| `SpendContext` | Allocator wrapper with puzzle caching, currying, CLVM execution, and spend collection |
-| `Layer` trait | Composable puzzle abstraction: `parse_puzzle`, `construct_puzzle`, `construct_solution`, `construct_spend` |
-| `Spend { puzzle, solution }` | Puzzle + solution pair as NodePtrs |
-| `SpendWithConditions` trait | Build spends from condition lists |
-| `Puzzle` enum | `Curried(CurriedPuzzle)` or `Raw(RawPuzzle)` parsed puzzles |
-| `DriverError` | Comprehensive error type for CLVM/driver operations |
-| Primitives: `Launcher`, `Cat`, `Did`, `Nft`, `Singleton`, `Vault`, etc. | High-level asset type drivers — corresponding to puzzles tested at [`test_puzzle_drivers.py`](https://github.com/Chia-Network/chia-blockchain/blob/main/chia/_tests/clvm/test_puzzle_drivers.py) and [`test_singletons.py`](https://github.com/Chia-Network/chia-blockchain/blob/main/chia/_tests/clvm/test_singletons.py) |
-| `StandardLayer` | Standard XCH transaction puzzle (p2_delegated_puzzle_or_hidden_puzzle) |
-| Action system | CHIP-0050 action-based spending pattern |
-
-**dig-clvm usage**: `SpendContext` is the primary interface for test fixture construction and any puzzle-building operations. `Layer` implementations for standard puzzles are used in tests and by callers building transactions.
-
-### 2.9 `chia-sdk-test` (v0.30) - Testing Infrastructure
-
-The Simulator uses `chia_consensus::run_spendbundle()` internally — the same code path that Chia L1 uses at [`_run_block()`](https://github.com/Chia-Network/chia-blockchain/blob/main/chia/consensus/multiprocess_validation.py#L62) for block validation and [`pre_validate_spendbundle()`](https://github.com/Chia-Network/chia-blockchain/blob/main/chia/full_node/mempool_manager.py#L428) for mempool admission.
-
-| API | Purpose |
-|---|---|
-| `Simulator` | In-memory blockchain with coin state tracking |
-| `Simulator::new_transaction(bundle)` | Validate and apply a spend bundle |
-| `Simulator::spend_coins(spends, keys)` | Convenience for spending with auto-signing |
-| `BlsPair` / `BlsPairWithCoin` | Test key pairs with pre-funded coins |
-| `to_program()`, `to_puzzle()` | Convert ToClvm values to Program/puzzle_hash |
-| `expect_spend(result, should_pass)` | Assert spend success/failure |
-
-**dig-clvm usage**: Primary testing tool. Gives us L1 parity in tests by construction.
-
-### 2.10 `chia-puzzles` (v0.20) - Puzzle Bytecode
-
-150+ hardcoded Chialisp puzzle constants including:
-- `P2_DELEGATED_PUZZLE_OR_HIDDEN_PUZZLE` (standard transaction)
-- `SINGLETON_TOP_LAYER_V1_1`, `SINGLETON_LAUNCHER`
-- `CAT_PUZZLE`, `DID_INNERPUZ`, `NFT_STATE_LAYER`
-- `SETTLEMENT_PAYMENT`, `VAULT`, `CLAWBACK`
-- All with pre-computed `_HASH` variants
-
-**dig-clvm usage**: Re-exported for callers that need puzzle bytecodes. Used in parity tests.
-
-### 2.11 `chia-sdk-coinset` (v0.30) - Coin State
-
-Mirrors the L1 `CoinRecord` used throughout [`check_time_locks()`](https://github.com/Chia-Network/chia-blockchain/blob/main/chia/consensus/check_time_locks.py#L15) and [`add_spend_bundle()`](https://github.com/Chia-Network/chia-blockchain/blob/main/chia/full_node/mempool_manager.py#L480).
-
-| API | Purpose |
-|---|---|
-| `CoinRecord` | `{ coin, coinbase, confirmed_block_index, spent, spent_block_index, timestamp }` |
-
-**dig-clvm usage**: Re-exported. Used in `ValidationContext` for tracking coin state.
+`dig-clvm` is the consensus-execution building block of the DIG L2 chain stack. Its
+consumers (mempool admission, block building, block validation in DIG validators) rely
+on the guarantee in §11.1 that its CLVM semantics are byte-for-byte identical to Chia
+L1 full-node behavior, because it executes the same upstream code. The L2 chain layer
+is described for end users in the DIG Protocol documentation at https://docs.dig.net
+(Protocol section).
 
 ---
 
-## 3. What dig-clvm Adds (L2 Consensus Orchestration)
+## 2. Crate identity and dependencies
 
-The Chia crates provide all the primitives. `dig-clvm` adds the **L2-specific orchestration** that composes them into a consensus API.
+- Crate name: `dig-clvm` (import as `dig_clvm`). License: MIT.
+  Published to crates.io on `v*` tags (§13.2).
+- `rust-version = 1.75.0` — the crate MUST build on Rust 1.75 stable.
+- Pinned upstream stack (a consumer of `dig-clvm` inherits these consensus semantics):
+  `clvmr 0.14`, `clvm-traits 0.26`, `clvm-utils 0.26`, `chia-protocol 0.26`,
+  `chia-consensus 0.26`, `chia-bls 0.26`, `chia-traits 0.26`, `chia-sdk-types 0.30`,
+  `chia-sdk-driver 0.30` (feature `action-layer`), `chia-sdk-coinset 0.30`,
+  `chia-puzzles 0.20`, `dig-constants 0.1`.
+- The only non-Chia runtime dependencies are `thiserror` and `hex`. The crate MUST NOT
+  add async runtimes, storage engines, serializers, or network clients.
 
-On Chia L1, this orchestration role is split between Python code in [`mempool_manager.py`](https://github.com/Chia-Network/chia-blockchain/blob/main/chia/full_node/mempool_manager.py#L428) (mempool path) and [`block_body_validation.py`](https://github.com/Chia-Network/chia-blockchain/blob/main/chia/consensus/block_body_validation.py#L191) (block path), with the heavy lifting delegated to Rust via `chia_rs`. `dig-clvm` does the same thing as a single Rust crate.
+---
 
-### 3.1 What dig-clvm Owns
+## 3. Public API surface
 
-| Component | Why it can't come from Chia crates |
-|---|---|
-| `ValidationContext` | L2 chain state: height, timestamp, genesis challenge, unspent coin set, ephemeral tracking |
-| `ValidationConfig` | L2-specific parameters: configurable cost limits (L2 block cost differs from L1's [`MAX_BLOCK_COST_CLVM=11B`](https://github.com/Chia-Network/chia-blockchain/blob/main/chia/consensus/default_constants.py#L68)), `MEMPOOL_MODE` flag support for SpendVisitor |
-| `validate_spend_bundle()` | Orchestrates `chia-consensus::run_spendbundle()` with L2 rules, produces additions + removals |
-| `build_block_generator()` | Assembles spend bundles into a compressed block generator via `solution_generator_backrefs()` |
-| `validate_block()` | Orchestrates `chia-consensus::run_block_generator2()` for block-level validation |
-| `SpendResult` | The output: `additions` (new coins), `removals` (spent coins), `fee`, and full conditions for inspection |
-| `ValidationError` | L2-specific error enum wrapping `chia-consensus` errors with additional context |
-| BLS cache management | `validate_spend_bundle()` and `validate_block()` accept `Option<&mut BlsCache>` to avoid re-verifying signatures across mempool → block |
-| L2 cost constants | `MAX_COST_PER_BLOCK` for L2 (50x L1 per-spend limit) |
+The public surface consists of (a) three validation entry points plus their input/output
+types, all defined in this crate, and (b) a re-export layer that makes `dig-clvm` a
+single-dependency facade over the Chia stack.
 
-### 3.2 What dig-clvm Re-exports
-
-Everything else comes from upstream:
+### 3.1 Entry points (this crate's own code)
 
 ```rust
-// Core execution
-pub use clvmr::{Allocator, NodePtr, Cost};
-pub use chia_sdk_types::run_puzzle;
-
-// Conditions
-pub use chia_sdk_types::{Condition, Conditions};
-
-// Consensus engine
-pub use chia_consensus::spendbundle_conditions::run_spendbundle;
-pub use chia_consensus::spendbundle_validation::validate_clvm_and_signature;
-pub use chia_consensus::conditions::{
-    SpendBundleConditions, OwnedSpendBundleConditions,
-    SpendConditions, OwnedSpendConditions,
-};
-pub use chia_consensus::consensus_constants::ConsensusConstants;
-pub use chia_consensus::opcodes::*;
-
-// Types
-pub use chia_protocol::{Coin, CoinSpend, SpendBundle, Program, Bytes32, CoinState};
-pub use chia_bls::{PublicKey, SecretKey, Signature, aggregate_verify, BlsCache};
-pub use chia_sdk_coinset::CoinRecord;
-
-// Hashing & currying
-pub use clvm_utils::{tree_hash, curry_tree_hash, CurriedProgram, TreeHash, ToTreeHash};
-
-// Serialization
-pub use clvm_traits::{ToClvm, FromClvm};
-
-// Spend construction
-pub use chia_sdk_driver::{SpendContext, Layer, Spend, SpendWithConditions, DriverError, Puzzle};
-
-// Puzzle modules
-pub use chia_sdk_types::Mod;
-pub use chia_puzzles;
-
-// Constants
-pub use chia_sdk_types::{MAINNET_CONSTANTS, TESTNET11_CONSTANTS};
-```
-
----
-
-## 4. Crate Architecture
-
-### 4.1 Module Layout
-
-```
-dig-clvm/
-  Cargo.toml
-  src/
-    lib.rs                  -- Re-exports from Chia crates + dig-clvm's own API
-    consensus/
-      mod.rs                -- Module root
-      validate.rs           -- validate_spend_bundle() orchestration
-      block.rs              -- Block generator construction + validate_block()
-      context.rs            -- ValidationContext
-      config.rs             -- ValidationConfig, L2 cost constants
-      result.rs             -- SpendResult
-      cache.rs              -- BLS signature cache management
-      error.rs              -- ValidationError
-  tests/
-    validation_tests.rs     -- Full bundle validation via Simulator
-    block_tests.rs          -- Block generator construction + validation
-    parity_tests.rs         -- Golden tests against known Chia L1 behavior
-    condition_tests.rs      -- Condition round-trip via SpendContext + Simulator
-    signature_tests.rs      -- BLS domain separation for all AGG_SIG_* variants
-    cost_tests.rs           -- L2 cost limit enforcement
-    cache_tests.rs          -- BLS cache hit/miss across mempool → block
-    simulator_tests.rs      -- Simulator-based multi-spend scenarios
-```
-
-The crate is intentionally small. Most of the complexity lives in upstream Chia crates where it is already tested and maintained.
-
-### 4.2 Dependencies
-
-```toml
-[dependencies]
-# CLVM runtime
-clvmr = "0.14"
-clvm-traits = "0.26"
-clvm-utils = "0.26"
-
-# Chia protocol & consensus
-chia-protocol = "0.26"
-chia-consensus = "0.26"
-chia-bls = "0.26"
-chia-traits = "0.26"
-
-# Chia SDK (individual crates, not the umbrella)
-chia-sdk-types = "0.30"
-chia-sdk-driver = { version = "0.30", features = ["action-layer"] }
-chia-sdk-coinset = "0.30"
-chia-puzzles = "0.20"
-
-# DIG ecosystem
-dig-constants = { path = "../dig-constants" }
-
-# Minimal own dependencies
-thiserror = "2"
-hex = "0.4"
-
-[dev-dependencies]
-chia-sdk-test = "0.30"
-hex-literal = "0.4"
-rand = "0.8"
-```
-
-No `tokio`, `serde_json`, `rocksdb`, `reqwest`, or async/IO/storage dependencies. Pure computation. Individual SDK crates are used instead of the `chia-wallet-sdk` umbrella to avoid pulling in RPC clients and wallet utilities.
-
-### 4.3 `dig-constants` (Sibling Crate)
-
-`dig-constants` is a separate crate at `../dig-constants` that defines DIG's network parameters. It is imported by `dig-clvm` and any other DIG crate that needs network constants. It already exists and compiles.
-
-```rust
-/// DIG network constants. Wraps chia-consensus ConsensusConstants
-/// with DIG-specific values (genesis challenge, AGG_SIG additional data, etc.)
-pub struct NetworkConstants { /* wraps ConsensusConstants */ }
-
-impl NetworkConstants {
-    pub fn consensus(&self) -> &ConsensusConstants;
-    pub fn genesis_challenge(&self) -> Bytes32;
-    pub fn agg_sig_me_additional_data(&self) -> Bytes32;
-    pub fn max_block_cost_clvm(&self) -> u64;
-}
-
-pub const DIG_MAINNET: NetworkConstants = /* ... */;
-pub const DIG_TESTNET: NetworkConstants = /* ... */;
-```
-
-Key design choices:
-- `hard_fork_height` and `hard_fork2_height` are set to `0` — DIG L2 starts with all consensus features enabled from block 0.
-- Proof-of-space and VDF fields are set to neutral values since DIG does not use Chia's PoS consensus.
-- Genesis challenge and all `agg_sig_*_additional_data` fields are placeholder zeros until mainnet launch.
-- Dependencies: `chia-consensus`, `chia-protocol`, `chia-bls`, `hex-literal` only.
-
----
-
-## 5. Public API
-
-### 5.1 Validation (dig-clvm's own code)
-
-```rust
-/// Validate a spend bundle against L2 consensus rules.
-///
-/// Internally calls chia_consensus::run_spendbundle() for CLVM execution
-/// and condition extraction, then applies L2-specific validation rules.
-///
-/// This mirrors the L1 flow where pre_validate_spendbundle() calls
-/// validate_clvm_and_signature() (mempool_manager.py:445) and
-/// validate_block_body() (block_body_validation.py:191) checks the results.
-///
-/// `bls_cache`: When provided, verified signature pairings are cached and
-/// reused. Pass the same cache across mempool → block validation to avoid
-/// re-verifying signatures. Pass None to verify from scratch.
 pub fn validate_spend_bundle(
     bundle: &SpendBundle,
     context: &ValidationContext,
     config: &ValidationConfig,
     bls_cache: Option<&mut BlsCache>,
-) -> Result<SpendResult, ValidationError>;
+) -> Result<SpendResult, ValidationError>;          // §5
 
-/// Build a block generator from a set of spend bundles.
-///
-/// Bundles are added in order until `max_cost` is reached. Bundles that
-/// would exceed the limit are skipped. The caller should pre-sort bundles
-/// by fee/cost ratio (highest first) to maximize fee revenue — matching
-/// L1's create_block_generator() (mempool.py:505).
-///
-/// The output includes the compressed block program (using CLVM
-/// back-references via solution_generator_backrefs() at mempool.py:529),
-/// the aggregated signature, additions, removals, and total cost —
-/// matching L1's NewBlockGenerator (generator_types.py:28).
 pub fn build_block_generator(
     bundles: &[SpendBundle],
     context: &ValidationContext,
     max_cost: Cost,
-) -> Result<BlockGeneratorResult, ValidationError>;
+) -> Result<BlockGeneratorResult, ValidationError>; // §6
 
-/// Output of build_block_generator(). Mirrors L1's NewBlockGenerator
-/// (generator_types.py:28).
-pub struct BlockGeneratorResult {
-    /// The compressed block-level CLVM program
-    pub generator: BlockGenerator,
-    /// Block heights of referenced previous generators (for cross-block
-    /// back-references). Mirrors L1's NewBlockGenerator.block_refs.
-    pub block_refs: Vec<u32>,
-    /// Aggregated BLS signature across all included bundles
-    pub aggregated_signature: Signature,
-    /// Coins created by all included spends
-    pub additions: Vec<Coin>,
-    /// Coins spent by all included spends
-    pub removals: Vec<Coin>,
-    /// Total CLVM cost of all included spends
-    pub cost: Cost,
-    /// Number of bundles included (may be less than input if cost limit hit)
-    pub bundles_included: usize,
-}
-
-/// Validate a block generator and return the combined additions + removals.
-///
-/// Executes the block-level CLVM program (which produces all spends),
-/// validates all conditions, and returns the aggregate SpendResult.
-/// Mirrors L1's _run_block() (multiprocess_validation.py:62) followed
-/// by validate_block_body() (block_body_validation.py:191).
 pub fn validate_block(
-    generator: &BlockGenerator,
+    generator: &[u8],
     generator_refs: &[Vec<u8>],
     context: &ValidationContext,
     config: &ValidationConfig,
     bls_cache: Option<&mut BlsCache>,
-) -> Result<SpendResult, ValidationError>;
+    aggregated_signature: &Signature,
+) -> Result<SpendResult, ValidationError>;          // §7
+```
 
-/// Re-exported from chia-consensus.
-pub use chia_consensus::run_block_generator::BlockGenerator;
+All three, together with `ValidationContext`, `ValidationConfig`, `ValidationError`,
+`SpendResult`, `BlockGeneratorResult`, `L1_MAX_COST_PER_SPEND`, and
+`L2_MAX_COST_PER_BLOCK`, are exported both at the crate root and under
+`dig_clvm::consensus`. These signatures are the crate's API contract; changing them is
+a semver-breaking change.
 
-/// L2 chain state for validation.
-///
-/// Analogous to the coin_records and blockchain state that Chia L1 passes
-/// through check_time_locks() (check_time_locks.py:15) and
-/// add_spend_bundle() (mempool_manager.py:480).
-///
-/// `coin_records` should contain only the coins being spent in this bundle,
-/// not the full UTXO set. The caller loads these from their database and
-/// passes them in. dig-clvm never touches storage directly.
+### 3.2 Re-export layer
+
+`dig-clvm` re-exports the following so that consumers need only depend on `dig-clvm`
+(each source crate module is also re-exported wholesale, e.g. `dig_clvm::chia_consensus`):
+
+| Source crate | Re-exported at the `dig_clvm` root |
+|---|---|
+| `clvmr` | `Allocator`, `NodePtr`, `Cost` (from `clvmr::cost`) |
+| `clvm-traits` | `ToClvm`, `FromClvm` |
+| `clvm-utils` | `tree_hash`, `CurriedProgram`, `ToTreeHash`, `TreeHash` |
+| `chia-protocol` | `Bytes`, `Bytes32`, `Coin`, `CoinSpend`, `CoinState`, `Program`, `SpendBundle` |
+| `chia-consensus` | `ConsensusConstants`, the `opcodes` module, **and every item of `chia_consensus::opcodes` flattened to the root** (`AGG_SIG_ME`, `CREATE_COIN`, `ASSERT_HEIGHT_ABSOLUTE`, `AGG_SIG_COST`, `CREATE_COIN_COST`, `ConditionOpcode`, …) |
+| `chia-bls` | `aggregate_verify`, `BlsCache`, `PublicKey`, `SecretKey`, `Signature` |
+| `chia-sdk-types` | `Condition`, `Conditions`, `Mod` |
+| `chia-sdk-driver` | `DriverError`, `Layer`, `Puzzle`, `Spend`, `SpendContext`, `SpendWithConditions` |
+| `chia-sdk-coinset` | `CoinRecord` |
+| `chia-puzzles` | the whole crate (puzzle bytecode + hash constants) |
+| `dig-constants` | `NetworkConstants`, `DIG_MAINNET`, `DIG_TESTNET` |
+
+The re-export layer is **append-only in spirit**: removing a re-export is a breaking
+change for consumers and MUST be treated as semver-major.
+
+---
+
+## 4. Input types
+
+### 4.1 `ValidationContext` — chain state supplied by the caller
+
+```rust
 pub struct ValidationContext {
-    /// Current L2 block height
-    pub height: u32,
-    /// Current block timestamp (seconds since epoch)
-    pub timestamp: u64,
-    /// DIG network constants (from dig-constants crate).
-    /// Contains genesis_challenge, AGG_SIG additional data, cost parameters,
-    /// and fork heights. Wraps chia-consensus ConsensusConstants with
-    /// DIG-specific values.
-    pub constants: dig_constants::NetworkConstants,
-    /// Coins being spent in this bundle (coin_id -> CoinRecord).
-    /// Only the coins relevant to this validation — NOT the full UTXO set.
-    pub coin_records: HashMap<Bytes32, CoinRecord>,
-    /// Coins created by earlier bundles in the same block (ephemeral).
-    /// Allows later bundles to spend coins that don't yet exist in the
-    /// persistent UTXO set, matching Chia L1's ASSERT_EPHEMERAL behavior.
-    pub ephemeral_coins: HashSet<Bytes32>,
+    pub height: u32,                                 // current L2 block height
+    pub timestamp: u64,                              // current block timestamp (seconds since epoch)
+    pub constants: NetworkConstants,                 // DIG network constants (dig-constants)
+    pub coin_records: HashMap<Bytes32, CoinRecord>,  // coin_id -> record, ONLY the coins being spent
+    pub ephemeral_coins: HashSet<Bytes32>,           // coin_ids created earlier in the same block
 }
+```
 
-/// L2-specific validation parameters.
-///
-/// On Chia L1, these are derived from ConsensusConstants and block height
-/// via get_flags_for_height_and_constants() (multiprocess_validation.py:19).
-/// L2 makes them explicitly configurable.
+- `coin_records` MUST contain the records of the coins the bundle under validation
+  spends — it is NOT the full UTXO set. The caller loads them from its own store;
+  `dig-clvm` never touches storage.
+- `ephemeral_coins` lists coins created by earlier bundles within the same block, so
+  that same-block create-and-spend chains validate (§5.2).
+- `constants` provides the `ConsensusConstants` (via `NetworkConstants::consensus()`)
+  passed verbatim to `chia-consensus`. All consensus-critical parameters — genesis
+  challenge, `agg_sig_*_additional_data` domain-separation values, fork heights, cost
+  model — come from this value. Implementations MUST source them from the
+  `dig-constants` crate (`DIG_MAINNET` / `DIG_TESTNET`), never hardcode them.
+- `height` is forwarded to `chia-consensus` for height-dependent condition/flag
+  semantics.
+- `timestamp` is carried for callers/context completeness; the current validation
+  pipeline does not read it directly (time-lock conditions are evaluated by
+  `chia-consensus` from the constants + height inputs).
+
+### 4.2 `ValidationConfig` — validation parameters
+
+```rust
 pub struct ValidationConfig {
-    /// Maximum CLVM cost per individual spend
-    pub max_cost_per_spend: Cost,
-    /// Maximum total CLVM cost per block
-    pub max_cost_per_block: Cost,
-    /// Execution flags (from chia-consensus).
-    ///
-    /// Common flags:
-    /// - `0` — block validation (default, most permissive)
-    /// - `MEMPOOL_MODE` — stricter mempool validation (rejects unknown
-    ///   opcodes, stricter cost accounting). Mirrors L1 at mempool.py:13.
-    /// - `DONT_VALIDATE_SIGNATURE` — skip BLS signature verification
-    ///   (for mempool pre-validation when sigs are checked separately).
-    ///
-    /// Flags can be combined: `MEMPOOL_MODE | DONT_VALIDATE_SIGNATURE`.
-    pub flags: u32,
+    pub max_cost_per_spend: Cost,   // default: L1_MAX_COST_PER_SPEND
+    pub max_cost_per_block: Cost,   // default: L2_MAX_COST_PER_BLOCK
+    pub flags: u32,                 // chia-consensus execution flags; default: 0
 }
-
-impl Default for ValidationConfig {
-    fn default() -> Self {
-        Self {
-            max_cost_per_spend: L1_MAX_COST_PER_SPEND,
-            max_cost_per_block: L2_MAX_COST_PER_BLOCK,
-            flags: 0,
-        }
-    }
-}
-
-/// Result of validating a spend bundle.
-///
-/// This is the primary output of the crate: the set of coin state changes
-/// that the caller commits to blockchain state. Mirrors what L1 extracts
-/// via tx_removals_and_additions() (generator_tools.py:54).
-pub struct SpendResult {
-    /// Coins to add to the UTXO set (created by CREATE_COIN conditions)
-    pub additions: Vec<Coin>,
-    /// Coins to remove from the UTXO set (the spent coins)
-    pub removals: Vec<Coin>,
-    /// Total fee (sum of removals - sum of additions)
-    pub fee: u64,
-    /// The full parsed conditions from chia-consensus (for callers that
-    /// need to inspect announcements, signatures, time locks, etc.)
-    pub conditions: OwnedSpendBundleConditions,
-}
-
-/// Validation errors.
-#[derive(Debug, thiserror::Error)]
-pub enum ValidationError {
-    #[error("CLVM execution failed: {0}")]
-    Clvm(chia_consensus::validation_error::ValidationErr),
-
-    #[error("Coin not found: {0}")]
-    CoinNotFound(Bytes32),
-
-    #[error("Coin already spent: {0}")]
-    AlreadySpent(Bytes32),
-
-    #[error("Double spend in bundle: {0}")]
-    DoubleSpend(Bytes32),
-
-    #[error("Puzzle hash mismatch: {0}")]
-    PuzzleHashMismatch(Bytes32),
-
-    #[error("Signature verification failed")]
-    SignatureFailed,
-
-    #[error("Conservation violation: input={input}, output={output}")]
-    ConservationViolation { input: u64, output: u64 },
-
-    #[error("Cost exceeded: limit={limit}, consumed={consumed}")]
-    CostExceeded { limit: Cost, consumed: Cost },
-
-    #[error("Driver error: {0}")]
-    Driver(#[from] DriverError),
-}
-
-/// L2 cost constants.
-/// L1 reference: MAX_BLOCK_COST_CLVM=11_000_000_000 (default_constants.py:68)
-pub const L1_MAX_COST_PER_SPEND: Cost = 11_000_000_000;
-pub const L2_MAX_COST_PER_BLOCK: Cost = 550_000_000_000; // 50 * L1 per-spend
 ```
 
-### 5.2 Re-exports (everything else)
-
-```rust
-// ── CLVM Runtime ──
-pub use clvmr::{self, Allocator, NodePtr, Cost};
-pub use clvm_traits::{self, ToClvm, FromClvm};
-pub use clvm_utils::{self, tree_hash, curry_tree_hash, CurriedProgram, TreeHash, ToTreeHash};
-
-// ── Chia Protocol Types ──
-pub use chia_protocol::{self, Bytes, Bytes32, Coin, CoinSpend, CoinState, Program, SpendBundle};
-
-// ── Consensus Engine ──
-pub use chia_consensus::{self, consensus_constants::ConsensusConstants, opcodes};
-pub use chia_consensus::spendbundle_conditions::run_spendbundle;
-pub use chia_consensus::spendbundle_validation::validate_clvm_and_signature;
-pub use chia_consensus::conditions::{
-    SpendBundleConditions, OwnedSpendBundleConditions,
-    SpendConditions, OwnedSpendConditions,
-};
-
-// ── BLS Signatures ──
-pub use chia_bls::{self, PublicKey, SecretKey, Signature, aggregate_verify, BlsCache};
-
-// ── SDK Types & Conditions ──
-pub use chia_sdk_types::{self, Condition, Conditions, Mod};
-
-// ── DIG Network Constants ──
-pub use dig_constants::{self, DIG_MAINNET, DIG_TESTNET, NetworkConstants};
-
-// ── Spend Construction ──
-pub use chia_sdk_driver::{self, SpendContext, Layer, Spend, SpendWithConditions, Puzzle, DriverError};
-
-// ── Coin State ──
-pub use chia_sdk_coinset::{self, CoinRecord};
-
-// ── Puzzles ──
-pub use chia_puzzles;
-
-// ── Block Generator ──
-pub use chia_consensus::run_block_generator::BlockGenerator;
-```
+- `Default` yields `{ max_cost_per_spend: 11_000_000_000, max_cost_per_block:
+  550_000_000_000, flags: 0 }`.
+- `flags` accepts `chia-consensus` flag bits and is forwarded verbatim to the
+  underlying engine. Recognized values with dig-clvm-level semantics:
+  - `0` — full validation (block-validation strictness, signatures verified);
+  - `DONT_VALIDATE_SIGNATURE` (`chia_consensus::flags`) — skip BLS aggregate
+    verification (§5.3);
+  - `MEMPOOL_MODE` — stricter mempool-admission semantics, enforced inside
+    `chia-consensus` (rejects unknown opcodes etc.). Flags MAY be OR-combined.
+- `max_cost_per_block` is the cost budget enforced by both `validate_spend_bundle`
+  and `validate_block` (§5.4, §7.2).
+- `max_cost_per_spend` is a carried configuration value; the per-spend limit is
+  enforced by `chia-consensus` through the cost budget it is given. dig-clvm's own
+  pipeline does not apply `max_cost_per_spend` as an additional independent check.
 
 ---
 
-## 6. Validation Flow
+## 5. `validate_spend_bundle` — semantics
 
-### 6.1 Internal Implementation
+Validates one spend bundle (mempool admission or per-bundle block inclusion) and
+computes its coin state delta. The pipeline below is normative and MUST execute in
+this order; the first failing step returns its error and later steps are not reached.
 
-`validate_spend_bundle()` orchestrates the upstream crates. This mirrors the L1 flow traced through the codebase:
+### 5.1 Step 1 — structural checks (duplicate spends)
 
-```
-L1 transaction flow:
-  full_node.py:2755     add_transaction()
-  mempool_manager.py:428  pre_validate_spendbundle()
-  mempool_manager.py:445  validate_clvm_and_signature()  ← Rust
-  mempool_manager.py:480  add_spend_bundle()
+Each `coin_spend.coin.coin_id()` in the bundle MUST be unique. A repeated coin id
+fails with `ValidationError::DoubleSpend(coin_id)` (detected on the second
+occurrence, in bundle order).
 
-L1 block validation flow:
-  blockchain.py:286            add_block()
-  multiprocess_validation.py:62  _run_block()
-  multiprocess_validation.py:69  run_block_generator2()  ← Rust
-  block_body_validation.py:191   validate_block_body()
-  check_time_locks.py:15         check_time_locks()
-  generator_tools.py:54          tx_removals_and_additions()
-```
+### 5.2 Step 2 — coin existence and spent-ness
 
-dig-clvm provides two entry points, mirroring L1's mempool and block paths:
+For every spend, the coin id MUST resolve, in this order:
 
-**Path A: Per-bundle validation (mempool admission)**
+1. If present in `context.coin_records`: the record's `spent` flag MUST be `false`,
+   otherwise `ValidationError::AlreadySpent(coin_id)`.
+2. Otherwise, the coin id MUST be present in `context.ephemeral_coins`
+   (created earlier in the same block); otherwise
+   `ValidationError::CoinNotFound(coin_id)`.
 
-```
-validate_spend_bundle(bundle, context, config, bls_cache)
-  |
-  v
-[1. Structural checks]                     ← dig-clvm's own code
-  |- Check for duplicate spends in bundle
-  |- Verify all spent coins exist in context.coin_records
-  |- Verify no coin is already spent
-  |
-  v
-[2. CLVM execution + condition extraction]  ← chia-consensus::run_spendbundle()
-  |- Creates allocator via make_allocator(config.flags)
-  |- If config.flags includes MEMPOOL_MODE, uses MempoolVisitor
-  |  for stricter validation (reject unknown opcodes, etc.)
-  |- Runs each puzzle+solution through clvmr
-  |- Parses all conditions from CLVM output
-  |- Tracks cost per spend and total
-  |- Returns SpendBundleConditions
-  |
-  v
-[3. Cost enforcement]                       ← dig-clvm checks L2 limits
-  |- conditions.cost <= config.max_cost_per_block
-  |
-  v
-[4. Condition validation]                   ← chia-consensus handles internally
-  |- Announcement matching (create vs assert)
-  |- Concurrent spend/puzzle assertions
-  |- Identity assertions (MY_COIN_ID, etc.)
-  |- Time/height locks (relative + absolute)
-  |- Ephemeral coin assertions
-  |
-  v
-[5. BLS signature verification]             ← chia-consensus + chia-bls
-  |- Unless config.flags includes DONT_VALIDATE_SIGNATURE:
-  |    Collect (pubkey, message) pairs with domain separation
-  |    Check bls_cache for already-verified pairings
-  |    aggregate_verify remaining against bundle.aggregated_signature
-  |    Store verified pairings in bls_cache
-  |
-  v
-[6. Conservation check]                     ← dig-clvm's own code
-  |- sum(removals) >= sum(additions) + fee
-  |
-  v
-SpendResult { additions, removals, fee, conditions }
-```
+### 5.3 Step 3 — CLVM execution, condition extraction, BLS verification
 
-**Path B: Block-level validation (block building + block validation)**
+CLVM execution and condition parsing are delegated to `chia-consensus` with
+`max_cost = config.max_cost_per_block`, `context.height`, `config.flags`, and
+`context.constants.consensus()`. The allocator is created with `clvmr::LIMIT_HEAP`.
+Any failure from the engine (cost exhaustion during execution, invalid conditions,
+malformed CLVM, failed announcement/time-lock/identity assertions, or — on the
+full-validation path — a bad signature detected inside the engine) maps to
+`ValidationError::Clvm(String)` carrying the upstream error's debug rendering.
 
-```
-build_block_generator(bundles, context, max_cost)
-  |
-  v
-[1. Assemble spends]                        ← dig-clvm
-  |- Iterate bundles in order (caller pre-sorts by fee/cost ratio)
-  |- For each bundle: run CLVM to compute cost, skip if exceeds remaining
-  |- Collect (coin, puzzle_reveal, solution) from included bundles
-  |- Aggregate BLS signatures across included bundles
-  |- Call solution_generator_backrefs() to create compressed
-  |  block program with CLVM back-references
-  |- Return BlockGeneratorResult { generator, sig, additions, removals, cost }
-  |
-  v
-validate_block(generator, refs, context, config, bls_cache)
-  |
-  v
-[2. Execute generator]                      ← chia-consensus::run_block_generator2()
-  |- Runs the block-level CLVM program
-  |- Produces all spends + conditions in one pass
-  |
-  v
-[3-6. Same as Path A]                       ← cost, conditions, BLS, conservation
-  |
-  v
-SpendResult { additions, removals, fee, conditions }
-```
+Exactly one of three verification paths is taken:
 
-### 6.2 Consumer: Single Spend (using SDK types)
-
-```rust
-use dig_clvm::{SpendContext, Condition, Conditions, Coin, Bytes32};
-
-let mut ctx = SpendContext::new();
-
-// Run a puzzle+solution (uses chia-sdk-types::run_puzzle internally)
-let puzzle_ptr = ctx.puzzle(puzzle_hash, &puzzle_bytes)?;
-let solution_ptr = ctx.alloc(&solution_value)?;
-let output = ctx.run(puzzle_ptr, solution_ptr)?;
-
-// Extract conditions using SDK types
-let conditions: Vec<Condition<NodePtr>> = ctx.extract(output)?;
-```
-
-### 6.3 Consumer: Full Bundle Validation
-
-```rust
-use dig_clvm::{
-    validate_spend_bundle, ValidationContext, ValidationConfig,
-    CoinRecord, BlsCache,
-};
-use dig_constants::DIG_MAINNET;
-
-let mut ctx = ValidationContext {
-    height: current_height,
-    timestamp: current_timestamp,
-    constants: DIG_MAINNET, // from dig-constants crate
-    coin_records: coins_being_spent, // only the coins in this bundle
-    ephemeral_coins: HashSet::new(),
-};
-
-// BLS cache persists across calls — mempool-verified sigs are reused in block validation
-let mut bls_cache = BlsCache::default();
-
-let config = ValidationConfig::default(); // L2 cost limits
-let result = validate_spend_bundle(&bundle, &ctx, &config, Some(&mut bls_cache))?;
-
-// Caller commits the additions and removals to blockchain state
-for coin in &result.additions {
-    state.add_coin(coin);       // new coins enter the UTXO set
-}
-for coin in &result.removals {
-    state.remove_coin(&coin);   // spent coins leave the UTXO set
-}
-// result.fee is available for block reward accounting
-```
-
-### 6.4 Consumer: Block Generator Construction + Validation
-
-```rust
-use dig_clvm::{
-    build_block_generator, validate_block, ValidationContext,
-    ValidationConfig, BlsCache, L2_MAX_COST_PER_BLOCK,
-};
-
-// Sort mempool bundles by fee/cost ratio (highest first), then build.
-// build_block_generator adds bundles until the cost limit is reached.
-mempool_bundles.sort_by(|a, b| fee_rate(b).cmp(&fee_rate(a)));
-let block = build_block_generator(
-    &mempool_bundles,
-    &ctx,
-    L2_MAX_COST_PER_BLOCK,
-)?;
-// block.bundles_included tells you how many fit
-
-// Validate the full block (reuses BLS cache from mempool validation)
-let result = validate_block(
-    &block.generator,
-    &[], // generator_refs from previous blocks (if any)
-    &ctx,
-    &ValidationConfig::default(),
-    Some(&mut bls_cache),
-)?;
-
-// result.additions and result.removals cover all spends in the block
-// block.aggregated_signature goes into the block header
-```
-
-### 6.5 Consumer: Spend Construction (using SDK driver)
-
-```rust
-use dig_clvm::{
-    SpendContext, StandardLayer, Conditions, Condition, Spend,
-    SpendBundle, Coin, Bytes32, SecretKey,
-};
-
-let mut ctx = SpendContext::new();
-
-// Use the standard puzzle layer
-let layer = StandardLayer::new(synthetic_key);
-let conditions = Conditions::new()
-    .with(Condition::CreateCoin(CreateCoin {
-        puzzle_hash: recipient_ph,
-        amount: 1000,
-        memos: vec![],
-    }));
-
-let spend = layer.spend_with_conditions(&mut ctx, conditions)?;
-ctx.spend(coin, spend)?;
-
-let coin_spends = ctx.take();
-let bundle = SpendBundle::new(coin_spends, aggregated_sig);
-```
-
----
-
-## 7. Chia L1 Parity
-
-Parity is achieved **by construction**: we use the same Rust crates that Chia full nodes use.
-
-| Concern | How parity is achieved | L1 reference |
+| Condition | Path | BLS verification |
 |---|---|---|
-| CLVM execution | Same `clvmr` runtime, same `ChiaDialect` | [`multiprocess_validation.py:62`](https://github.com/Chia-Network/chia-blockchain/blob/main/chia/consensus/multiprocess_validation.py#L62) — `_run_block()` |
-| Condition parsing | Same `chia-consensus` condition processing with `SpendVisitor` | [`condition_opcodes.py:7-73`](https://github.com/Chia-Network/chia-blockchain/blob/main/chia/types/condition_opcodes.py#L7) — all opcodes |
-| Tree hash | Same `clvm_utils::tree_hash()` | [`test_curry_and_treehash.py`](https://github.com/Chia-Network/chia-blockchain/blob/main/chia/_tests/clvm/test_curry_and_treehash.py) — parity tests |
-| BLS signatures | Same `chia-bls` with identical domain separation | [`condition_tools.py:74-97`](https://github.com/Chia-Network/chia-blockchain/blob/main/chia/consensus/condition_tools.py#L74) — `make_aggsig_final_message()` |
-| Cost model | Same opcode costs from `chia-consensus::opcodes` | [`condition_costs.py:8-13`](https://github.com/Chia-Network/chia-blockchain/blob/main/chia/consensus/condition_costs.py#L8) — AGG_SIG, CREATE_COIN, GENERIC |
-| Cost limits | Same per-spend limit, configurable per-block | [`default_constants.py:68`](https://github.com/Chia-Network/chia-blockchain/blob/main/chia/consensus/default_constants.py#L68) — `MAX_BLOCK_COST_CLVM=11B` |
-| Puzzle bytecodes | Same `chia-puzzles` constants | [`test_puzzle_drivers.py`](https://github.com/Chia-Network/chia-blockchain/blob/main/chia/_tests/clvm/test_puzzle_drivers.py) |
-| Condition types | Same `chia-sdk-types::Condition<T>` enum | Covers all opcodes including [`SEND_MESSAGE/RECEIVE_MESSAGE`](https://github.com/Chia-Network/chia-blockchain/blob/main/chia/types/condition_opcodes.py#L37) |
-| Spend construction | Same `chia-sdk-driver::SpendContext` and `Layer` trait | Tested via [`test_singletons.py`](https://github.com/Chia-Network/chia-blockchain/blob/main/chia/_tests/clvm/test_singletons.py) |
-| Mempool flags | Same `MEMPOOL_MODE`, `DONT_VALIDATE_SIGNATURE` | [`mempool.py:13-14`](https://github.com/Chia-Network/chia-blockchain/blob/main/chia/full_node/mempool.py#L13) |
-| Block generators | Same `solution_generator_backrefs()` + `run_block_generator2()` | [`mempool.py:529`](https://github.com/Chia-Network/chia-blockchain/blob/main/chia/full_node/mempool.py#L529), [`multiprocess_validation.py:69`](https://github.com/Chia-Network/chia-blockchain/blob/main/chia/consensus/multiprocess_validation.py#L69) |
-| BLS cache | Same `BlsCache` for mempool→block sig reuse | `chia-bls::BlsCache` |
+| `config.flags & DONT_VALIDATE_SIGNATURE != 0` | `run_spendbundle` with the caller's flags | **Skipped** |
+| flag clear, `bls_cache = Some(cache)` | `run_spendbundle`, then `BlsCache::aggregate_verify` over the returned (pubkey, message) pairs against `bundle.aggregated_signature` | Verified, with cached pairings reused and new pairings stored |
+| flag clear, `bls_cache = None` | `chia_consensus::validate_clvm_and_signature` | Verified from scratch inside the engine |
 
-The only L2-specific divergence is block-level cost limits (`L2_MAX_COST_PER_BLOCK`), which is explicitly configurable via `ValidationConfig`.
+On the cached path, an invalid aggregate signature fails with
+`ValidationError::SignatureFailed`. The signature messages carry Chia's standard
+`AGG_SIG_*` domain separation: per-variant coin addenda plus the
+`agg_sig_*_additional_data` from `context.constants` — this is computed entirely
+inside `chia-consensus`/`chia-bls` and MUST NOT be reimplemented.
+
+When the same `BlsCache` is passed across mempool admission and later block
+validation, previously verified pairings are not re-verified. Cache reuse MUST NOT
+change the accept/reject outcome, only the cost of reaching it.
+
+### 5.4 Step 4 — cost enforcement
+
+`conditions.cost` (the total CLVM + condition cost computed by `chia-consensus`)
+MUST satisfy `cost <= config.max_cost_per_block`; otherwise
+`ValidationError::CostExceeded { limit, consumed }`. (The engine already enforces
+the same budget during execution; this check is a defensive re-assertion.)
+
+### 5.5 Step 5 — additions and removals
+
+- `removals` = the spent coins, i.e. `bundle.coin_spends[i].coin`, in bundle order.
+- `additions` = one `Coin { parent_coin_info: spend.coin_id, puzzle_hash, amount }`
+  per `CREATE_COIN` condition, in engine spend/condition order.
+
+### 5.6 Step 6 — value conservation
+
+Let `input = Σ removals.amount` and `output = Σ additions.amount` (u64 sums).
+The bundle MUST satisfy `input >= output`; otherwise
+`ValidationError::ConservationViolation { input, output }`. The fee is defined as
+`fee = input − output`.
+
+### 5.7 Result
+
+On success, returns `SpendResult { additions, removals, fee, conditions }`, where
+`conditions: OwnedSpendBundleConditions` is the full parsed condition set from
+`chia-consensus` (announcements, agg-sig pairs, time locks, per-spend detail) for
+callers that need deeper inspection. The caller — not this crate — commits
+`additions`/`removals` to chain state.
 
 ---
 
-## 8. Testing Strategy
+## 6. `build_block_generator` — semantics
 
-### 8.1 Simulator-Based Tests (Primary)
+Assembles spend bundles into a compressed block generator (block building).
 
-Use `chia-sdk-test::Simulator` for end-to-end validation. The Simulator internally uses `chia_consensus::run_spendbundle()` — the same code path as Chia full nodes at [`_run_block()`](https://github.com/Chia-Network/chia-blockchain/blob/main/chia/consensus/multiprocess_validation.py#L62) and [`pre_validate_spendbundle()`](https://github.com/Chia-Network/chia-blockchain/blob/main/chia/full_node/mempool_manager.py#L428).
+### 6.1 Selection
+
+- Bundles are considered strictly **in the caller-supplied order** (greedy,
+  first-fit). Callers SHOULD pre-sort by fee/cost ratio, highest first, to maximize
+  fee revenue; `build_block_generator` performs no sorting of its own.
+- For each bundle, CLVM cost is computed via `run_spendbundle` with
+  `DONT_VALIDATE_SIGNATURE` (block building does not verify signatures per bundle)
+  and a budget of the **remaining** block cost.
+- A bundle is **skipped, not fatal**, when it fails execution (invalid, or exceeds
+  the remaining budget during execution) or when its computed cost exceeds the
+  remaining budget. Selection continues with subsequent bundles.
+- For every included bundle: its spends' `(coin, puzzle_reveal, solution)` triples
+  are appended, its removals and `CREATE_COIN` additions are accumulated, its
+  `aggregated_signature` is aggregated (BLS sum), and its cost is deducted from the
+  remaining budget.
+
+### 6.2 Output
+
+Returns `BlockGeneratorResult`:
 
 ```rust
-use chia_sdk_test::{Simulator, BlsPair};
-use dig_clvm::{validate_spend_bundle, ValidationContext, ValidationConfig};
-
-#[test]
-fn test_standard_spend() {
-    let mut sim = Simulator::new();
-    let alice = sim.bls(1_000_000);
-
-    // Build and validate a spend using the Simulator
-    let spend_bundle = /* build bundle using SpendContext */;
-    let result = sim.new_transaction(spend_bundle.clone());
-    assert!(result.is_ok());
-
-    // Also validate through dig-clvm's API for L2 rules
-    let ctx = ValidationContext::from_simulator(&sim);
-    let result = validate_spend_bundle(&spend_bundle, &ctx, &ValidationConfig::default());
-    assert!(result.is_ok());
+pub struct BlockGeneratorResult {
+    pub generator: Vec<u8>,              // compressed block-level CLVM program
+    pub block_refs: Vec<u32>,            // ALWAYS empty in the current protocol version
+    pub aggregated_signature: Signature, // BLS aggregate over included bundles
+    pub additions: Vec<Coin>,
+    pub removals: Vec<Coin>,
+    pub cost: Cost,                      // total cost of included bundles
+    pub bundles_included: usize,         // may be < bundles.len()
 }
 ```
 
-### 8.2 Test Scenarios
+- `generator` MUST be produced by `chia_consensus::solution_generator_backrefs`
+  (CLVM back-reference compression — the same encoding Chia L1 block builders emit
+  and `run_block_generator2` consumes). A serialization failure maps to
+  `ValidationError::Clvm`.
+- `block_refs` is reserved for cross-block generator references; this version never
+  emits them, and `validate_block` correspondingly accepts an empty
+  `generator_refs`.
+- With zero included bundles the result is a valid empty generator with the default
+  (identity) `Signature`, empty additions/removals, `cost = 0`.
 
-**Validation tests** (`tests/validation_tests.rs`) — mirrors scenarios from [`test_conditions.py`](https://github.com/Chia-Network/chia-blockchain/blob/main/chia/_tests/core/full_node/test_conditions.py):
-- Happy path: standard spend with CREATE_COIN + AGG_SIG_ME
-- Double spend within a bundle
-- Puzzle hash mismatch
-- Conservation violation (outputs > inputs)
-- Announcement graph (create + assert across coins)
-- Missing announcement assertion
-- Height/time lock enforcement (absolute and relative) — as validated by [`check_time_locks()`](https://github.com/Chia-Network/chia-blockchain/blob/main/chia/consensus/check_time_locks.py#L15)
-- Before-height/before-time lock enforcement
-- Ephemeral coins (created and spent in same block)
-- Concurrent spend assertions
-- Multi-spend bundles with fee
+### 6.3 Round-trip invariant
 
-**Parity tests** (`tests/parity_tests.rs`):
-- Known standard transaction puzzle hashes from `chia-puzzles`
-- Round-trip: build spend via `SpendContext` -> validate via both Simulator and `validate_spend_bundle()`
-- All 8 `AGG_SIG_*` variants produce correct domain-separated messages — verified against the lookup table at [`condition_tools.py:87-97`](https://github.com/Chia-Network/chia-blockchain/blob/main/chia/consensus/condition_tools.py#L87)
-- `tree_hash` of known puzzles matches published Chia puzzle hashes — see [`test_curry_and_treehash.py`](https://github.com/Chia-Network/chia-blockchain/blob/main/chia/_tests/clvm/test_curry_and_treehash.py)
-
-**Cost tests** (`tests/cost_tests.rs`):
-- L2 block cost limit enforcement
-- Per-spend cost limit (same as L1's [`MAX_BLOCK_COST_CLVM=11B`](https://github.com/Chia-Network/chia-blockchain/blob/main/chia/consensus/default_constants.py#L68))
-- Cost boundary: program at exactly max_cost succeeds
-- Cost boundary: program at max_cost + 1 fails
-
-**Block generator tests** (`tests/block_tests.rs`) — mirrors [`create_block_generator()`](https://github.com/Chia-Network/chia-blockchain/blob/main/chia/full_node/mempool.py#L505) and [`simple_solution_generator_backrefs()`](https://github.com/Chia-Network/chia-blockchain/blob/main/chia/full_node/bundle_tools.py#L15):
-- Build generator from single bundle, validate, compare additions/removals to per-bundle validation
-- Build generator from multiple bundles, verify all spends included
-- Back-reference deduplication: bundles sharing the same puzzle produce a smaller generator than naive serialization
-- Generator with `generator_refs` from previous blocks
-- Round-trip: `build_block_generator()` output validates identically via `validate_block()`
-
-**BLS cache tests** (`tests/cache_tests.rs`):
-- Validate bundle with empty cache, verify cache is populated
-- Re-validate same bundle, verify cache hit (no re-verification)
-- Validate bundle in mempool (with cache), then validate same bundle in block (cache reused)
-- Cache miss: modified signature invalidates cache entry
-
-**Condition tests** (`tests/condition_tests.rs`) — covers all opcodes from [`condition_opcodes.py:7-73`](https://github.com/Chia-Network/chia-blockchain/blob/main/chia/types/condition_opcodes.py#L7):
-- Build conditions via `Conditions<T>` builder
-- Execute via SpendContext
-- Verify parsed output matches for each opcode
-- Unknown opcode passthrough
-- `SEND_MESSAGE(66)` / `RECEIVE_MESSAGE(67)` — tested on L1 at [`test_message_conditions.py`](https://github.com/Chia-Network/chia-blockchain/blob/main/chia/_tests/clvm/test_message_conditions.py)
-- `MEMPOOL_MODE` flag rejects unknown opcodes that block validation accepts
-
-### 8.3 Parity by Construction
-
-Because tests use `chia-sdk-test::Simulator` which internally runs `chia_consensus::run_spendbundle()`, any test that passes in the Simulator is **by definition** Chia L1 compatible. We don't need separate "parity" testing infrastructure — it's built into the test framework.
+A generator produced by `build_block_generator` MUST validate under
+`validate_block` (same context/constants, budget ≥ `cost`, and the returned
+`aggregated_signature`), yielding exactly the accumulated `additions` and
+`removals`.
 
 ---
 
-## 9. Design Decisions
+## 7. `validate_block` — semantics
 
-### 9.1 Why Maximize Chia Crate Reuse
+Validates a serialized block generator (block validation).
 
-The previous approach (in `l2_driver_state_channel`) reimplemented condition parsing, tree hashing, currying helpers, and validation logic. This created:
-- Maintenance burden: upstream changes required manual porting
-- Parity risk: subtle differences in condition parsing or cost accounting
-- Test duplication: testing behavior already tested upstream
+### 7.1 Execution
 
-By building on the Chia crates directly, we get:
-- Parity by construction (same code = same behavior)
-- Upstream bug fixes for free
-- Access to the full SDK (SpendContext, Layer trait, puzzle drivers, Simulator)
-- Smaller codebase to maintain (~200 lines of L2-specific code vs ~3000 lines of reimplemented CLVM logic)
+The generator plus `generator_refs` are executed via
+`chia_consensus::run_block_generator2` with `config.max_cost_per_block`,
+`config.flags`, `context.constants.consensus()`, the supplied
+`aggregated_signature`, and the optional `BlsCache`. Signature verification is
+performed **inside the engine** against all `AGG_SIG_*` conditions produced by the
+block, unless `config.flags` contains `DONT_VALIDATE_SIGNATURE`. Any engine failure
+(execution error, invalid conditions, cost exhaustion, bad signature) maps to
+`ValidationError::Clvm(String)`.
 
-### 9.2 Why `chia-consensus` for Validation Instead of Hand-Rolled
+### 7.2 Post-execution checks (same rules as §5.4–§5.6)
 
-`chia-consensus::run_spendbundle()` handles the entire CLVM execution + condition extraction + announcement matching + time lock validation pipeline. This is the same engine Chia L1 uses at [`validate_clvm_and_signature()`](https://github.com/Chia-Network/chia-blockchain/blob/main/chia/full_node/mempool_manager.py#L445) (`mempool_manager.py:445`). Using it directly:
-- Eliminates the custom condition parser (640+ lines in the old `clvm.rs`)
-- Eliminates the custom validation logic (500+ lines in the old `validation.rs`)
-- Automatically supports [`SEND_MESSAGE(66)` / `RECEIVE_MESSAGE(67)`](https://github.com/Chia-Network/chia-blockchain/blob/main/chia/types/condition_opcodes.py#L37) and future opcodes
-- Uses the same `SpendVisitor` pattern Chia uses for mempool vs block validation
+1. `conditions.cost <= config.max_cost_per_block`, else `CostExceeded`.
+2. `additions` from `CREATE_COIN` conditions;
+   `removals` reconstructed per executed spend as
+   `Coin { parent_id, puzzle_hash, coin_amount }` from the engine's spend records.
+3. Conservation: `Σ removals >= Σ additions`, else `ConservationViolation`;
+   `fee = input − output`.
 
-### 9.3 Why `chia-sdk-types::Condition<T>` Instead of Custom Enum
+Returns the block-aggregate `SpendResult`.
 
-The SDK's `Condition<T>` is generic over the node representation, supports all opcodes (including NFT/CAT-specific ones), and is directly serializable to/from CLVM via `ToClvm`/`FromClvm`. The previous custom enum:
-- Missed `SEND_MESSAGE` and `RECEIVE_MESSAGE`
-- Required manual synchronization with upstream opcode changes
-- Couldn't be used for spend construction (only parsing)
-
-The SDK type works for both construction (via `Conditions<T>` builder) and parsing (via `FromClvm`), eliminating the need for separate types.
-
-### 9.4 Why `SpendContext` Instead of Raw Allocator Wrappers
-
-The spec previously proposed custom `allocator.rs`, `node_codec.rs`, and `clvm_codec.rs` wrappers. `SpendContext` already provides all of this plus puzzle caching, currying, and spend collection. It's the standard way to interact with CLVM in the Chia Rust ecosystem.
-
-### 9.5 Why `ValidationConfig` with Configurable Cost Limits
-
-The only L2-specific parameter that differs from Chia L1 is the block-level cost limit. L1 uses [`MAX_BLOCK_COST_CLVM=11_000_000_000`](https://github.com/Chia-Network/chia-blockchain/blob/main/chia/consensus/default_constants.py#L68). Rather than forking the consensus code, we wrap it with configurable limits. The per-spend limit matches L1 exactly.
-
-### 9.6 Soft Fork Flags
-
-`chia-consensus::get_flags_for_height_and_constants()` (imported at [`multiprocess_validation.py:19`](https://github.com/Chia-Network/chia-blockchain/blob/main/chia/consensus/multiprocess_validation.py#L19)) computes the correct execution flags for any block height, handling hard fork transitions automatically. `dig-clvm` exposes this via `ValidationConfig::flags` so L2 can track upstream fork activations.
+Note: `validate_block` derives coin existence from the generator itself; the §5.1–§5.2
+structural checks against `coin_records` apply only to the per-bundle path. Callers
+performing full block validation remain responsible for checking the block's removals
+against their UTXO set when committing state.
 
 ---
 
-## 10. Resolved Decisions
+## 8. Error behavior
 
-1. **Block-level generator: Yes.** `dig-clvm` supports block-level generator construction and execution, matching Chia L1's [`run_block_generator()`](https://github.com/Chia-Network/chia-blockchain/blob/main/chia/consensus/multiprocess_validation.py#L71) and [`solution_generator_backrefs()`](https://github.com/Chia-Network/chia-blockchain/blob/main/chia/full_node/mempool.py#L529) (`mempool.py:529`). This enables compact block encoding where repeated puzzle bytecodes are deduplicated via CLVM back-references. The crate provides both per-bundle validation (for mempool admission) and block-generator-level validation (for block building and block validation). See [`simple_solution_generator_backrefs()`](https://github.com/Chia-Network/chia-blockchain/blob/main/chia/full_node/bundle_tools.py#L15) (`bundle_tools.py:15`) for L1's approach.
+`ValidationError` (`thiserror`-derived, `Debug + Display`) is the single error type
+for all entry points:
 
-2. **BLS cache: dig-clvm owns it.** `validate_spend_bundle()` and `validate_block()` accept an optional `&mut BlsCache` parameter. When provided, verified signature pairings are cached and reused across calls — avoiding re-verification when a mempool-validated bundle later appears in a block. This matches Chia L1's pattern where `BLSCache` is passed through the validation pipeline. When `None`, signatures are verified from scratch every time.
+| Variant | Emitted when | Emitting path |
+|---|---|---|
+| `Clvm(String)` | Any `chia-consensus` engine failure (execution, conditions, cost-during-run, in-engine signature failure, generator serialization) | §5.3, §6.2, §7.1 |
+| `CoinNotFound(Bytes32)` | Spent coin neither in `coin_records` nor `ephemeral_coins` | §5.2 |
+| `AlreadySpent(Bytes32)` | Coin record has `spent = true` | §5.2 |
+| `DoubleSpend(Bytes32)` | Same coin id spent twice within one bundle | §5.1 |
+| `SignatureFailed` | Cached-path BLS aggregate verification fails | §5.3 |
+| `ConservationViolation { input, output }` | `Σ outputs > Σ inputs` | §5.6, §7.2 |
+| `CostExceeded { limit, consumed }` | Post-execution cost above `max_cost_per_block` | §5.4, §7.2 |
+| `PuzzleHashMismatch(Bytes32)` | Reserved. Defined in the API; puzzle-reveal/puzzle-hash equality is currently detected inside `chia-consensus` and surfaces as `Clvm` | — |
+| `Driver(DriverError)` | Reserved (`From<DriverError>` conversion for spend-construction call sites) | — |
 
-3. **SpendVisitor customization: Yes.** `dig-clvm` exposes the `SpendVisitor` hook from `chia-consensus`, enabling different validation strictness for mempool admission vs block validation. The `ValidationConfig::flags` field accepts `MEMPOOL_MODE` ([`mempool.py:13`](https://github.com/Chia-Network/chia-blockchain/blob/main/chia/full_node/mempool.py#L13)) for stricter mempool rules (reject unknown opcodes, stricter cost accounting). This allows L2-specific mempool policies (e.g., minimum fee thresholds, puzzle blacklists) to be enforced at the CLVM validation layer rather than requiring external filtering.
+Errors are **deterministic**: the same inputs MUST produce the same variant. The
+first failing pipeline step wins. `Clvm`'s payload string is diagnostic text and is
+NOT part of the stable contract; match on the variant, not the message.
 
-4. **Individual crates.** `dig-clvm` depends on `chia-sdk-types`, `chia-sdk-driver`, `chia-sdk-coinset`, etc. individually rather than the `chia-wallet-sdk` umbrella. This avoids pulling in RPC client code, wallet utilities, and other modules that a consensus crate doesn't need. Each sub-crate is pinned to the same version for consistency.
+---
+
+## 9. Constants and configuration defaults
+
+| Constant | Value | Meaning |
+|---|---|---|
+| `L1_MAX_COST_PER_SPEND` | `11_000_000_000` | Chia L1's `MAX_BLOCK_COST_CLVM`; default per-spend budget |
+| `L2_MAX_COST_PER_BLOCK` | `550_000_000_000` | DIG L2 block cost budget (50 × the L1 per-spend limit); default block budget |
+
+These are `clvmr::cost::Cost` (`u64`). The L2 block budget being 50× L1's limit is
+the **only intentional consensus divergence from Chia L1** in this crate; everything
+else (cost model, condition semantics, signature scheme) follows L1 by construction
+(§11.1). Network-level constants (genesis challenge, AGG_SIG additional data, fork
+heights) are NOT defined here — they come exclusively from `dig-constants`.
+
+---
+
+## 10. Determinism and purity invariants
+
+- Every public function is a **pure function of its arguments** (plus the mutation
+  of an explicitly passed `BlsCache`). No global state, no I/O, no clock, no
+  randomness. Identical inputs MUST yield identical outputs on every platform.
+- CLVM allocators are created per call (`make_allocator(LIMIT_HEAP)`) and never
+  shared or leaked across calls.
+- The presence/absence/contents of a `BlsCache` MUST NOT change any accept/reject
+  decision — only performance.
+- The crate performs no logging.
+
+---
+
+## 11. Security properties
+
+1. **BLS aggregate signatures.** Unless `DONT_VALIDATE_SIGNATURE` is explicitly
+   requested, every accepted bundle/block has a valid BLS12-381 aggregate signature
+   over all `AGG_SIG_*` (pubkey, message) pairs, with Chia's per-opcode domain
+   separation (coin-derived addendum + network `additional_data` from the DIG
+   constants). Validators MUST NOT set `DONT_VALIDATE_SIGNATURE` on the
+   consensus-accept path; it exists for cost estimation and staged mempool
+   pipelines where signatures are verified separately.
+2. **Value conservation.** No accepted bundle or block can create value:
+   `Σ created ≤ Σ spent`, with the difference being the fee (§5.6, §7.2).
+3. **Cost bounding.** CLVM execution is budget-limited both during execution (inside
+   `chia-consensus`) and by a post-execution re-check, bounding CPU per
+   bundle/block. Heap use is bounded via `LIMIT_HEAP`.
+4. **Double-spend resistance (bundle-local).** A bundle cannot spend the same coin
+   twice, spend a coin marked spent, or spend a nonexistent coin (given a truthful
+   `ValidationContext`). Cross-bundle/global double-spend prevention is the
+   caller's UTXO-set responsibility.
+5. **No key material.** The crate handles public keys and signatures only; it never
+   holds or derives secret keys (signing lives in wallet crates such as
+   `dig-l1-wallet`).
+
+---
+
+## 12. Conformance requirements
+
+### 12.1 Chia L1 parity — by construction
+
+CLVM execution, condition opcodes and semantics, cost accounting, tree hashing,
+puzzle bytecodes, and BLS message construction MUST be byte-for-byte identical to
+Chia L1 full nodes. `dig-clvm` achieves this by **delegating to the same Rust crates
+Chia's full node uses** (`chia-consensus`'s `run_spendbundle` /
+`run_block_generator2` / `validate_clvm_and_signature`, `clvmr`, `chia-bls`,
+`chia-puzzles`) rather than by reimplementation. Any change that replaces a
+delegated code path with local logic is a conformance violation.
+
+### 12.2 Cross-repo contracts
+
+- **`dig-constants`** is the single source of the DIG network's
+  `ConsensusConstants`; `dig-clvm` consumers MUST construct `ValidationContext`
+  from `DIG_MAINNET` / `DIG_TESTNET` (or an equivalently sourced
+  `NetworkConstants`).
+- **Generator encoding** produced here (`solution_generator_backrefs` output) is
+  what DIG L2 block producers embed in `dig-block` blocks and what every validator
+  re-executes via `validate_block`; producer and validator MUST use compatible
+  `chia-consensus` versions so the encoding round-trips.
+- The DIG L2 chain stack (`dig-block`, `dig-mempool`, `dig-coinstore`) consumes
+  `SpendResult.additions/removals/fee` as the canonical state delta.
+
+### 12.3 Verification gates (CI)
+
+The repository CI (`publish.yml`, on every push/PR to `main`) MUST pass:
+`cargo fmt --all -- --check`, `cargo clippy --all-targets --all-features -- -D warnings`,
+the full test suite under coverage with a **≥80% line-coverage gate**
+(`cargo llvm-cov nextest --all-features --fail-under-lines 80 --retries 2
+--test-threads 1`; Simulator-based tests are not parallel-safe and MUST run
+single-threaded), and `cargo doc --no-deps --all-features`. The test suite is
+requirement-driven: one integration-test file per requirement
+(`tests/vv_req_{val|blk|bls|par|api|con}_{nnn}.rs`) per the registry in
+`docs/requirements/`.
+
+---
+
+## 13. Versioning and release
+
+1. **Semver.** The API in §3 is the compatibility surface. Removing/renaming any
+   entry point, field, error variant, constant, or re-export is semver-major;
+   additive changes are semver-minor.
+2. **Release trigger.** Publication to crates.io and the GitHub release are driven
+   by pushing a `v*` tag (or manual dispatch); pushes to `main` run the test gate
+   only.
+3. **Consensus stability.** Changing `L2_MAX_COST_PER_BLOCK`, the pinned
+   `chia-consensus`/`clvmr` major behavior, or any validation-pipeline rule in
+   §5–§7 changes DIG L2 consensus and MUST be coordinated as a network-level
+   protocol change, not shipped as a routine crate bump.
+
+---
+
+## 14. Conformance summary
+
+| # | Requirement | Level | Spec |
+|---|---|---|---|
+| 1 | Delegate all CLVM/condition/BLS/cost logic to upstream Chia crates | MUST | §1.2, §12.1 |
+| 2 | No I/O, async, storage, or global state; pure deterministic functions | MUST | §1.2, §10 |
+| 3 | Validation pipeline order: structure → existence → CLVM+sig → cost → conservation | MUST | §5 |
+| 4 | Duplicate coin id in a bundle → `DoubleSpend` | MUST | §5.1 |
+| 5 | Unknown coin → `CoinNotFound` unless listed ephemeral; spent coin → `AlreadySpent` | MUST | §5.2 |
+| 6 | BLS verified unless `DONT_VALIDATE_SIGNATURE`; cache changes cost only, never outcome | MUST | §5.3, §10 |
+| 7 | Total cost ≤ `max_cost_per_block`, else `CostExceeded` | MUST | §5.4, §7.2 |
+| 8 | Conservation `Σin ≥ Σout`; `fee = in − out` | MUST | §5.6, §7.2 |
+| 9 | Block generator emitted via `solution_generator_backrefs`; round-trips through `validate_block` | MUST | §6.2, §6.3 |
+| 10 | Bundle selection is greedy in caller order; failing bundles skipped, not fatal | MUST | §6.1 |
+| 11 | Block validation executes via `run_block_generator2` with in-engine signature check | MUST | §7.1 |
+| 12 | Network constants sourced from `dig-constants`, never hardcoded | MUST | §4.1, §12.2 |
+| 13 | Defaults: per-spend 11 G cost, per-block 550 G cost, flags 0 | MUST | §4.2, §9 |
+| 14 | Callers pre-sort bundles by fee/cost before block building | SHOULD | §6.1 |
+| 15 | Consensus-accept paths never set `DONT_VALIDATE_SIGNATURE` | MUST NOT (set) | §11.1 |
+| 16 | CI green: fmt, clippy `-D warnings`, tests single-threaded, ≥80% line coverage, docs | MUST | §12.3 |
+| 17 | Releases tag-driven (`v*`); consensus-affecting changes are protocol events | MUST | §13 |
