@@ -66,7 +66,7 @@ is described for end users in the DIG Protocol documentation at https://docs.dig
   `clvmr 0.14`, `clvm-traits 0.26`, `clvm-utils 0.26`, `chia-protocol 0.26`,
   `chia-consensus 0.26`, `chia-bls 0.26`, `chia-traits 0.26`, `chia-sdk-types 0.30`,
   `chia-sdk-driver 0.30` (feature `action-layer`), `chia-sdk-coinset 0.30`,
-  `chia-puzzles 0.20`, `dig-constants 0.1`.
+  `chia-puzzles 0.20`, `dig-constants 0.9`.
 - The only non-Chia runtime dependencies are `thiserror` and `hex`. The crate MUST NOT
   add async runtimes, storage engines, serializers, or network clients.
 
@@ -131,6 +131,21 @@ a semver-breaking change.
 
 The re-export layer is **append-only in spirit**: removing a re-export is a breaking
 change for consumers and MUST be treated as semver-major.
+
+A re-export's VALUE is part of the contract, not only its name. `DIG_MAINNET` and
+`DIG_TESTNET` MUST carry these genesis challenges:
+
+| Re-export | `genesis_challenge` |
+|---|---|
+| `DIG_MAINNET` | `0af981862a4df51f51ec59c312315d959931d917c375730b89b9e2b0854d1abf` |
+| `DIG_TESTNET` | `088c18d6b7859d885dc2f03166e862c958f74b63b6353c3df71d103b9b806c3b` |
+
+`agg_sig_me_additional_data` MUST equal the genesis challenge verbatim; each of the
+six domain-separated variants MUST equal `sha256(genesis_challenge || opcode_byte)`
+for its opcode (`AGG_SIG_PARENT` 43, `PUZZLE` 44, `AMOUNT` 45, `PUZZLE_AMOUNT` 46,
+`PARENT_AMOUNT` 47, `PARENT_PUZZLE` 48). Changing a genesis challenge changes every
+signature the network accepts, so it is a **breaking** change for every consumer
+(§13) even though the re-exported names are unchanged.
 
 ---
 
@@ -504,6 +519,7 @@ requirement-driven: one integration-test file per requirement
 | 10 | Bundle selection is greedy in caller order; failing bundles skipped, not fatal | MUST | §6.1 |
 | 11 | Block validation executes via `run_block_generator2` with in-engine signature check | MUST | §7.1 |
 | 12 | Network constants sourced from `dig-constants`, never hardcoded | MUST | §4.1, §12.2 |
+| 12a | Re-exported `DIG_MAINNET`/`DIG_TESTNET` carry the specified genesis challenges and derived `agg_sig_*` domain values | MUST | §3.2 |
 | 13 | Defaults: per-spend 11 G cost, per-block 550 G cost, flags 0 | MUST | §4.2, §9 |
 | 14 | Callers pre-sort bundles by fee/cost before block building | SHOULD | §6.1 |
 | 15 | Consensus-accept paths never set `DONT_VALIDATE_SIGNATURE` | MUST NOT (set) | §11.1 |
