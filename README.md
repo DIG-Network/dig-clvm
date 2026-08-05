@@ -261,7 +261,7 @@ chia-sdk-types = "0.30"
 chia-sdk-driver = { version = "0.30", features = ["action-layer"] }
 chia-sdk-coinset = "0.30"
 chia-puzzles = "0.20"
-dig-constants = { path = "../dig-constants" }
+dig-constants = "0.9"
 thiserror = "2"
 hex = "0.4"
 

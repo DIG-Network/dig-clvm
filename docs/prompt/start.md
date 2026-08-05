@@ -74,5 +74,5 @@
 | Puzzle bytecodes | `chia-puzzles` | 0.20 |
 | CLVM traits | `clvm-traits` | 0.26 |
 | Tree hash / currying | `clvm-utils` | 0.26 |
-| Network constants | `dig-constants` | 0.1.0 |
+| Network constants | `dig-constants` | 0.9 |
 | Testing | `chia-sdk-test` | 0.30 |
