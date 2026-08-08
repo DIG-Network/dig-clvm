@@ -47,8 +47,7 @@ pub fn build_block_generator(
             &mut a,
             bundle,
             cost_remaining,
-            context.height,
-            DONT_VALIDATE_SIGNATURE,
+            context.spend_flags(DONT_VALIDATE_SIGNATURE),
             consensus,
         );
 

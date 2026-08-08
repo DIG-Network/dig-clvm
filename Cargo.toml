@@ -1,6 +1,6 @@
 [package]
 name = "dig-clvm"
-version = "0.2.2"
+version = "0.3.0"
 edition = "2021"
 rust-version = "1.75.0"
 description = "DIG L2 CLVM consensus engine — validates spend bundles, computes coin additions and removals"
@@ -13,31 +13,31 @@ path = "src/lib.rs"
 
 [dependencies]
 # CLVM runtime
-clvmr = "0.14"
-clvm-traits = "0.26"
-clvm-utils = "0.26"
+clvmr = "0.16.2"
+clvm-traits = "0.36.1"
+clvm-utils = "0.36.1"
 
 # Chia protocol & consensus
-chia-protocol = "0.26"
-chia-consensus = "0.26"
-chia-bls = "0.26"
-chia-traits = "0.26"
+chia-protocol = "0.36.1"
+chia-consensus = "0.36.1"
+chia-bls = "0.36.1"
+chia-traits = "0.36.1"
 
 # Chia SDK (individual crates, not the umbrella)
-chia-sdk-types = "0.30"
-chia-sdk-driver = { version = "0.30", features = ["action-layer"] }
-chia-sdk-coinset = "0.30"
-chia-puzzles = "0.20"
+chia-sdk-types = "0.34"
+chia-sdk-driver = { version = "0.34", features = ["action-layer"] }
+chia-sdk-coinset = "0.34"
+chia-puzzles = "0.20.3"
 
 # DIG ecosystem
-dig-constants = "0.9"
+dig-constants = "0.10"
 
 # Minimal own dependencies
 thiserror = "2"
 hex = "0.4"
 
 [dev-dependencies]
-chia-sdk-test = "0.30"
+chia-sdk-test = "0.34"
 hex-literal = "0.4"
 rand = "0.8"
 sha2 = "0.10"

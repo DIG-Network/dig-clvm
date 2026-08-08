@@ -80,8 +80,7 @@ pub fn validate_spend_bundle(
             &mut a,
             bundle,
             max_cost,
-            context.height,
-            config.flags,
+            context.spend_flags(config.flags),
             consensus,
         )
         .map_err(|e| ValidationError::Clvm(format!("{:?}", e)))?;
@@ -95,8 +94,7 @@ pub fn validate_spend_bundle(
             &mut a,
             bundle,
             max_cost,
-            context.height,
-            config.flags,
+            context.spend_flags(config.flags),
             consensus,
         )
         .map_err(|e| ValidationError::Clvm(format!("{:?}", e)))?;
@@ -116,8 +114,13 @@ pub fn validate_spend_bundle(
     } else {
         // Full validation without cache — validate_clvm_and_signature
         // handles everything including BLS aggregate verify.
-        let (owned_conditions, _validation_pairs, _duration) =
-            validate_clvm_and_signature(bundle, max_cost, consensus, context.height)
+        //
+        // The `extra` flags are 0, not `config.flags`: chia-consensus 0.26's
+        // `validate_clvm_and_signature` hard-coded `0` for the caller flags, so
+        // passing `config.flags` here would change validation behaviour rather
+        // than preserve it.
+        let (owned_conditions, _validation_pairs) =
+            validate_clvm_and_signature(bundle, max_cost, consensus, context.spend_flags(0))
                 .map_err(|e| ValidationError::Clvm(format!("{:?}", e)))?;
         owned_conditions
     };
