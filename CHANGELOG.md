@@ -4,6 +4,11 @@ All notable changes to this project are documented here.
 This project adheres to [Semantic Versioning](https://semver.org) and
 [Conventional Commits](https://www.conventionalcommits.org).
 
+## [0.3.0] - 2026-08-08
+
+### Features
+- Bump dig-constants to 0.10 and migrate to the chia-0.36 family (#7)
+
 ## [0.2.2] - 2026-08-05
 
 ### Bug Fixes
