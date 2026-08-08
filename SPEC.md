@@ -63,10 +63,10 @@ is described for end users in the DIG Protocol documentation at https://docs.dig
   Published to crates.io on `v*` tags (§13.2).
 - `rust-version = 1.75.0` — the crate MUST build on Rust 1.75 stable.
 - Pinned upstream stack (a consumer of `dig-clvm` inherits these consensus semantics):
-  `clvmr 0.14`, `clvm-traits 0.26`, `clvm-utils 0.26`, `chia-protocol 0.26`,
-  `chia-consensus 0.26`, `chia-bls 0.26`, `chia-traits 0.26`, `chia-sdk-types 0.30`,
-  `chia-sdk-driver 0.30` (feature `action-layer`), `chia-sdk-coinset 0.30`,
-  `chia-puzzles 0.20`, `dig-constants 0.9`.
+  `clvmr 0.16.2`, `clvm-traits 0.36.1`, `clvm-utils 0.36.1`, `chia-protocol 0.36.1`,
+  `chia-consensus 0.36.1`, `chia-bls 0.36.1`, `chia-traits 0.36.1`, `chia-sdk-types 0.34`,
+  `chia-sdk-driver 0.34` (feature `action-layer`), `chia-sdk-coinset 0.34`,
+  `chia-puzzles 0.20.3`, `dig-constants 0.10`.
 - The only non-Chia runtime dependencies are `thiserror` and `hex`. The crate MUST NOT
   add async runtimes, storage engines, serializers, or network clients.
 
@@ -191,8 +191,9 @@ pub struct ValidationConfig {
 
 - `Default` yields `{ max_cost_per_spend: 11_000_000_000, max_cost_per_block:
   550_000_000_000, flags: 0 }`.
-- `flags` accepts `chia-consensus` flag bits and is forwarded verbatim to the
-  underlying engine. Recognized values with dig-clvm-level semantics:
+- `flags` accepts `chia-consensus` flag bits. They are not forwarded verbatim: the
+  spend-execution paths combine them with the derivation in §4.3. Recognized values
+  with dig-clvm-level semantics:
   - `0` — full validation (block-validation strictness, signatures verified);
   - `DONT_VALIDATE_SIGNATURE` (`chia_consensus::flags`) — skip BLS aggregate
     verification (§5.3);
@@ -203,6 +204,34 @@ pub struct ValidationConfig {
 - `max_cost_per_spend` is a carried configuration value; the per-spend limit is
   enforced by `chia-consensus` through the cost budget it is given. dig-clvm's own
   pipeline does not apply `max_cost_per_spend` as an additional independent check.
+
+### 4.3 Execution flag derivation
+
+Every `run_spendbundle` call MUST execute under the flags Chia L1 would apply, not
+under the caller's flags alone:
+
+```rust
+impl ValidationContext {
+    pub fn spend_flags(&self, extra: u32) -> u32 {
+        get_flags_for_height_and_constants(self.height, self.constants.consensus())
+            | extra
+            | MEMPOOL_MODE
+    }
+}
+```
+
+- `extra` is the caller's contribution: `config.flags` for `validate_spend_bundle`
+  (§5.3), `DONT_VALIDATE_SIGNATURE` for `build_block_generator` (§6.1), and `0` for
+  the `validate_clvm_and_signature` path, which supplies no caller flags of its own.
+- `chia-consensus` performed this derivation inside `run_spendbundle` up to 0.26 and
+  removed it in 0.36 along with the `height` parameter. The obligation moved to the
+  caller; forwarding `config.flags` alone compiles and runs while executing spends
+  outside mempool mode and without the height-activated hard-fork flags.
+- Both DIG networks set `hard_fork2_height = 0`, so the hard-fork flags
+  (`ENABLE_KECCAK_OPS_OUTSIDE_GUARD | COST_CONDITIONS | SIMPLE_GENERATOR`) are active
+  at every height and are part of the crate's cost schedule, not a conditional extra.
+- `validate_block` is excluded: `run_block_generator2` never derived flags in any
+  version, and receives `config.flags` unchanged (§7.1).
 
 ---
 
@@ -242,7 +271,7 @@ Exactly one of three verification paths is taken:
 
 | Condition | Path | BLS verification |
 |---|---|---|
-| `config.flags & DONT_VALIDATE_SIGNATURE != 0` | `run_spendbundle` with the caller's flags | **Skipped** |
+| `config.flags & DONT_VALIDATE_SIGNATURE != 0` | `run_spendbundle` with the derived flags (§4.3) | **Skipped** |
 | flag clear, `bls_cache = Some(cache)` | `run_spendbundle`, then `BlsCache::aggregate_verify` over the returned (pubkey, message) pairs against `bundle.aggregated_signature` | Verified, with cached pairings reused and new pairings stored |
 | flag clear, `bls_cache = None` | `chia_consensus::validate_clvm_and_signature` | Verified from scratch inside the engine |
 
@@ -520,6 +549,7 @@ requirement-driven: one integration-test file per requirement
 | 11 | Block validation executes via `run_block_generator2` with in-engine signature check | MUST | §7.1 |
 | 12 | Network constants sourced from `dig-constants`, never hardcoded | MUST | §4.1, §12.2 |
 | 12a | Re-exported `DIG_MAINNET`/`DIG_TESTNET` carry the specified genesis challenges and derived `agg_sig_*` domain values | MUST | §3.2 |
+| 12b | `run_spendbundle` executed under `hard-fork flags \| caller flags \| MEMPOOL_MODE` | MUST | §4.3 |
 | 13 | Defaults: per-spend 11 G cost, per-block 550 G cost, flags 0 | MUST | §4.2, §9 |
 | 14 | Callers pre-sort bundles by fee/cost before block building | SHOULD | §6.1 |
 | 15 | Consensus-accept paths never set `DONT_VALIDATE_SIGNATURE` | MUST NOT (set) | §11.1 |

@@ -90,3 +90,12 @@ items:
     spec_ref: "docs/requirements/domains/parity/specs/PAR-011.md"
     tests: []
     notes: ""
+
+  - id: PAR-012
+    section: "Mempool Flag Parity"
+    summary: "Spend execution flags derived as Chia L1 derives them"
+    status: verified
+    spec_ref: "docs/requirements/domains/parity/specs/PAR-012.md"
+    tests:
+      - "tests/vv_req_par_012.rs"
+    notes: "Introduced with the chia-consensus 0.26 -> 0.36.1 bump, which removed the internal flag derivation from run_spendbundle()."

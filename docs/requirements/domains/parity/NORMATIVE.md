@@ -58,3 +58,6 @@
 
 <a id="PAR-011"></a>**PAR-011** `MEMPOOL_MODE` and `DONT_VALIDATE_SIGNATURE` flags MUST produce identical behavior to Chia L1's usage at [`mempool.py:13-14`](https://github.com/Chia-Network/chia-blockchain/blob/main/chia/full_node/mempool.py#L13). `MEMPOOL_MODE` MUST enable stricter validation; `DONT_VALIDATE_SIGNATURE` MUST skip BLS verification.
 > **Spec:** [`PAR-011.md`](specs/PAR-011.md)
+
+<a id="PAR-012"></a>**PAR-012** The execution flags passed to `run_spendbundle()` MUST be derived the way Chia L1 derives them: `get_flags_for_height_and_constants(height, constants) | caller_flags | MEMPOOL_MODE`. `chia-consensus` performed this derivation internally through 0.26 and stopped doing so in 0.36, so the caller MUST now perform it explicitly; forwarding `ValidationConfig::flags` alone would execute spends outside mempool mode and without the height-activated hard-fork flags.
+> **Spec:** [`PAR-012.md`](specs/PAR-012.md)

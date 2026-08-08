@@ -114,7 +114,7 @@ To check whether embeddings exist, inspect `.gitnexus/meta.json` — the `stats.
 |----------|------|---------|
 | Master Spec | `SPEC.md` | Complete specification |
 | Prompt System | `docs/prompt/start.md` | Workflow entry point |
-| Requirements | `docs/requirements/README.md` | 55 requirements across 6 domains |
+| Requirements | `docs/requirements/README.md` | 56 requirements across 6 domains |
 | Implementation Order | `docs/requirements/IMPLEMENTATION_ORDER.md` | Phased checklist |
 | Network Constants | `../dig-constants/src/lib.rs` | DIG_MAINNET / DIG_TESTNET |
 
@@ -160,6 +160,6 @@ src/
 | Spend Validation | VAL | 15 |
 | Block Generator | BLK | 9 |
 | BLS Cache | BLS | 5 |
-| Chia L1 Parity | PAR | 11 |
+| Chia L1 Parity | PAR | 12 |
 | Crate API | API | 8 |
 | Network Constants | CON | 7 |

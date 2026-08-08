@@ -250,23 +250,23 @@ No async, no IO, no storage. Pure computation. All CLVM execution, condition par
 
 ```toml
 [dependencies]
-clvmr = "0.14"
-clvm-traits = "0.26"
-clvm-utils = "0.26"
-chia-protocol = "0.26"
-chia-consensus = "0.26"
-chia-bls = "0.26"
-chia-traits = "0.26"
-chia-sdk-types = "0.30"
-chia-sdk-driver = { version = "0.30", features = ["action-layer"] }
-chia-sdk-coinset = "0.30"
-chia-puzzles = "0.20"
-dig-constants = "0.9"
+clvmr = "0.16.2"
+clvm-traits = "0.36.1"
+clvm-utils = "0.36.1"
+chia-protocol = "0.36.1"
+chia-consensus = "0.36.1"
+chia-bls = "0.36.1"
+chia-traits = "0.36.1"
+chia-sdk-types = "0.34"
+chia-sdk-driver = { version = "0.34", features = ["action-layer"] }
+chia-sdk-coinset = "0.34"
+chia-puzzles = "0.20.3"
+dig-constants = "0.10"
 thiserror = "2"
 hex = "0.4"
 
 [dev-dependencies]
-chia-sdk-test = "0.30"
+chia-sdk-test = "0.34"
 ```
 
 ## Testing

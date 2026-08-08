@@ -13,5 +13,6 @@
 | [PAR-009](NORMATIVE.md#PAR-009) | ✅ | Condition types from SDK | Condition, Conditions re-exported from chia-sdk-types in lib.rs. Not custom-defined. |
 | [PAR-010](NORMATIVE.md#PAR-010) | ✅ | Block generators match L1 | solution_generator_backrefs + run_block_generator2 from chia-consensus in block.rs. |
 | [PAR-011](NORMATIVE.md#PAR-011) | ✅ | Mempool flags match L1 | DONT_VALIDATE_SIGNATURE and MEMPOOL_MODE imported from chia-consensus::flags. |
+| [PAR-012](NORMATIVE.md#PAR-012) | ✅ | Spend flags derived as L1 derives them | `ValidationContext::spend_flags()` composes hard-fork flags \| caller flags \| MEMPOOL_MODE. `tests/vv_req_par_012.rs` asserts the composition structurally and proves NO_UNKNOWN_CONDS reaches the condition parser. |
 
 **Status legend:** ✅ verified · ⚠️ partial · ❌ gap

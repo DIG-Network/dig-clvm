@@ -45,7 +45,7 @@ domains/
 ├── validation/specs/       # VAL-001.md through VAL-015.md
 ├── block_generator/specs/  # BLK-001.md through BLK-009.md
 ├── bls_cache/specs/        # BLS-001.md through BLS-005.md
-├── parity/specs/           # PAR-001.md through PAR-011.md
+├── parity/specs/           # PAR-001.md through PAR-012.md
 ├── crate_api/specs/        # API-001.md through API-008.md
 └── constants/specs/        # CON-001.md through CON-007.md
 ```
@@ -62,7 +62,7 @@ All requirements are derived from:
 | Spend Validation | VAL | 15 |
 | Block Generator | BLK | 9 |
 | BLS Cache | BLS | 5 |
-| Chia L1 Parity | PAR | 11 |
+| Chia L1 Parity | PAR | 12 |
 | Crate API | API | 8 |
 | Network Constants | CON | 7 |
-| **Total** | | **55** |
+| **Total** | | **56** |
