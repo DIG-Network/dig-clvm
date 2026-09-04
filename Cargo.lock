@@ -806,7 +806,7 @@ dependencies = [
 
 [[package]]
 name = "dig-clvm"
-version = "0.4.0"
+version = "0.4.1"
 dependencies = [
  "chia-bls 0.36.1",
  "chia-consensus",
